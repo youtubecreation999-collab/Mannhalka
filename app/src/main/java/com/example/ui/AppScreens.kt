@@ -47,6 +47,9 @@ import com.example.viewmodel.ModerationState
 import com.example.R
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -639,6 +642,20 @@ fun PasscodeScreen(viewModel: MainViewModel, isSetup: Boolean) {
         }
     }
 
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            com.example.security.GoogleAuthHelper.handleSignInResult(result.data) { success ->
+                if (success) {
+                    viewModel.unlockApp()
+                } else {
+                    viewModel.passcodeError.value = "Google Sign-In failed"
+                }
+            }
+        }
+    }
+
     val headlineText = if (isSetup) {
         if (!confirmStep) "Create Secure PIN" else "Confirm Secure PIN"
     } else {
@@ -703,6 +720,19 @@ fun PasscodeScreen(viewModel: MainViewModel, isSetup: Boolean) {
                 letterSpacing = 4.sp,
                 color = MaterialTheme.colorScheme.primary
             )
+            
+            if (!isSetup) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = {
+                        val intent = com.example.security.GoogleAuthHelper.getSignInIntent(context)
+                        launcher.launch(intent)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Text("Sign in with Google", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
             
             Spacer(modifier = Modifier.height(8.dp))
             
