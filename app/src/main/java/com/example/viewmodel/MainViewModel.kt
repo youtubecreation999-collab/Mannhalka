@@ -14,6 +14,7 @@ import com.example.BuildConfig
 import com.example.db.ContactEntity
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import java.util.UUID
 import kotlin.random.Random
 
@@ -37,6 +38,7 @@ sealed interface ModerationState {
     data class Blocked(val reason: String) : ModerationState
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val database = AppDatabase.getDatabase(application)

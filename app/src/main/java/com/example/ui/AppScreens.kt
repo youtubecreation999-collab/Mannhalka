@@ -47,6 +47,7 @@ import com.example.viewmodel.ModerationState
 import com.example.R
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.text.KeyboardOptions
 import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -154,8 +155,8 @@ fun MobileNumberSettingsScreen(viewModel: MainViewModel) {
         Spacer(modifier = Modifier.height(24.dp))
         
         Text("Add Contact", style = MaterialTheme.typography.titleMedium)
-        OutlinedTextField(value = contactName, onValueChange = { contactName = it }, label = { Text("Name") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = contactNumber, onValueChange = { contactNumber = it }, label = { Text("13-Digit Number") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = contactName, onValueChange = { contactName = it }, label = { Text("Name") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(autoCorrectEnabled = false))
+        OutlinedTextField(value = contactNumber, onValueChange = { contactNumber = it }, label = { Text("13-Digit Number") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, keyboardType = androidx.compose.ui.text.input.KeyboardType.Number))
         Button(onClick = { 
             if (contactNumber.length == 13) {
                 viewModel.addContact(contactNumber, contactName)
@@ -451,6 +452,19 @@ fun AppHeader() {
             Icon(
                 imageVector = Icons.Default.Security,
                 contentDescription = "Shield Lock",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+        val context = LocalContext.current
+        IconButton(
+            onClick = { android.widget.Toast.makeText(context, "Donation feature coming soon for Mannhalka!", android.widget.Toast.LENGTH_SHORT).show() },
+            modifier = Modifier.size(40.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Favorite,
+                contentDescription = "Donate",
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)
             )
@@ -1218,6 +1232,7 @@ fun ShareScreen(viewModel: MainViewModel) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 )
             },
+            keyboardOptions = KeyboardOptions(autoCorrect = false),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(180.dp)
@@ -1811,6 +1826,7 @@ fun ChatRoomScreen(viewModel: MainViewModel, chatId: String) {
                         onValueChange = { textInput = it },
                         placeholder = { Text("Secure message...", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)) },
                         shape = RoundedCornerShape(24.dp),
+                        keyboardOptions = KeyboardOptions(autoCorrectEnabled = false),
                         modifier = Modifier
                             .weight(1f)
                             .testTag("chat_input_field"),

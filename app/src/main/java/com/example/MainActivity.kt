@@ -29,7 +29,11 @@ class MainActivity : FragmentActivity() {
     setContent {
       MyApplicationTheme {
         viewModel = viewModel()
-        MainAppContainer(viewModel = viewModel)
+        androidx.compose.runtime.CompositionLocalProvider(
+          androidx.compose.ui.platform.LocalTextToolbar provides com.example.ui.EmptyTextToolbar()
+        ) {
+          MainAppContainer(viewModel = viewModel)
+        }
       }
     }
   }
