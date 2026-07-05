@@ -1633,126 +1633,130 @@ fun ChatRoomScreen(viewModel: MainViewModel, chatId: String) {
             }
 
             // Message Stream
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                contentPadding = PaddingValues(vertical = 12.dp)
-            ) {
-                items(messages) { msg ->
-                    val isMyMsg = msg.senderName == userNickname
-                    val decryptedText = CryptoHelper.decrypt(msg.encryptedContent, msg.iv, chatId)
-                    val showDetails = expandedStates[msg.id] ?: false
+            if (messages.isEmpty()) {
+                IcebreakerPanel(viewModel) { textInput = it }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    contentPadding = PaddingValues(vertical = 12.dp)
+                ) {
+                    items(messages) { msg ->
+                        val isMyMsg = msg.senderName == userNickname
+                        val decryptedText = CryptoHelper.decrypt(msg.encryptedContent, msg.iv, chatId)
+                        val showDetails = expandedStates[msg.id] ?: false
 
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = if (isMyMsg) Alignment.End else Alignment.Start
-                    ) {
-                        // Sender label
-                        Text(
-                            text = if (isMyMsg) "You (Anonymous)" else msg.senderName,
-                            fontSize = 10.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 2.dp, start = 4.dp, end = 4.dp)
-                        )
-
-                        // Message text box
-                        Box(
-                            modifier = Modifier
-                                .clip(
-                                    RoundedCornerShape(
-                                        topStart = 16.dp,
-                                        topEnd = 16.dp,
-                                        bottomStart = if (isMyMsg) 16.dp else 4.dp,
-                                        bottomEnd = if (isMyMsg) 4.dp else 16.dp
-                                    )
-                                )
-                                .clickable { viewModel.toggleMessageEncryptionDetails(msg.id) }
-                                .background(
-                                    if (isMyMsg) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                                    else MaterialTheme.colorScheme.surface
-                                )
-                                .border(
-                                    width = 1.dp,
-                                    color = if (isMyMsg) MaterialTheme.colorScheme.primary.copy(alpha = 0.4f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
-                                    shape = RoundedCornerShape(
-                                        topStart = 16.dp,
-                                        topEnd = 16.dp,
-                                        bottomStart = if (isMyMsg) 16.dp else 4.dp,
-                                        bottomEnd = if (isMyMsg) 4.dp else 16.dp
-                                    )
-                                )
-                                .padding(horizontal = 14.dp, vertical = 10.dp)
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = if (isMyMsg) Alignment.End else Alignment.Start
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = decryptedText,
-                                    fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Icon(
-                                    imageVector = Icons.Default.Lock,
-                                    contentDescription = "Encrypted Packet Status",
-                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
-                                    modifier = Modifier.size(11.dp)
-                                )
-                            }
-                        }
+                            // Sender label
+                            Text(
+                                text = if (isMyMsg) "You (Anonymous)" else msg.senderName,
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(bottom = 2.dp, start = 4.dp, end = 4.dp)
+                            )
 
-                        // Cryptographic Diagnostics Card Overlay
-                        AnimatedVisibility(
-                            visible = showDetails,
-                            enter = fadeIn() + expandVertically(),
-                            exit = fadeOut() + shrinkVertically()
-                        ) {
-                            Card(
+                            // Message text box
+                            Box(
                                 modifier = Modifier
-                                    .widthIn(max = 280.dp)
-                                    .padding(vertical = 4.dp)
+                                    .clip(
+                                        RoundedCornerShape(
+                                            topStart = 16.dp,
+                                            topEnd = 16.dp,
+                                            bottomStart = if (isMyMsg) 16.dp else 4.dp,
+                                            bottomEnd = if (isMyMsg) 4.dp else 16.dp
+                                        )
+                                    )
+                                    .clickable { viewModel.toggleMessageEncryptionDetails(msg.id) }
+                                    .background(
+                                        if (isMyMsg) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                        else MaterialTheme.colorScheme.surface
+                                    )
                                     .border(
                                         width = 1.dp,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        shape = RoundedCornerShape(10.dp)
-                                    ),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                                shape = RoundedCornerShape(10.dp)
+                                        color = if (isMyMsg) MaterialTheme.colorScheme.primary.copy(alpha = 0.4f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
+                                        shape = RoundedCornerShape(
+                                            topStart = 16.dp,
+                                            topEnd = 16.dp,
+                                            bottomStart = if (isMyMsg) 16.dp else 4.dp,
+                                            bottomEnd = if (isMyMsg) 4.dp else 16.dp
+                                        )
+                                    )
+                                    .padding(horizontal = 14.dp, vertical = 10.dp)
                             ) {
-                                Column(modifier = Modifier.padding(10.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        text = "SQLite E2EE Metadata Inspector",
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = MaterialTheme.colorScheme.primary
+                                        text = decryptedText,
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = "• Local Storage Protocol: AES-CBC-256",
-                                        fontSize = 9.sp,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.Lock,
+                                        contentDescription = "Encrypted Packet Status",
+                                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                                        modifier = Modifier.size(11.dp)
                                     )
-                                    Text(
-                                        text = "• Cryptographic IV:\n  ${msg.iv}",
-                                        fontSize = 8.sp,
-                                        fontFamily = FontFamily.Monospace,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = "• Encrypted Ciphertext Packet:\n  ${msg.encryptedContent}",
-                                        fontSize = 8.sp,
-                                        fontFamily = FontFamily.Monospace,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(top = 2.dp)
-                                    )
-                                    Text(
-                                        text = "• System Integrity Verified: YES",
-                                        fontSize = 9.sp,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(top = 4.dp)
-                                    )
+                                }
+                            }
+
+                            // Cryptographic Diagnostics Card Overlay
+                            AnimatedVisibility(
+                                visible = showDetails,
+                                enter = fadeIn() + expandVertically(),
+                                exit = fadeOut() + shrinkVertically()
+                            ) {
+                                Card(
+                                    modifier = Modifier
+                                        .widthIn(max = 280.dp)
+                                        .padding(vertical = 4.dp)
+                                        .border(
+                                            width = 1.dp,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            shape = RoundedCornerShape(10.dp)
+                                        ),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Column(modifier = Modifier.padding(10.dp)) {
+                                        Text(
+                                            text = "SQLite E2EE Metadata Inspector",
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "• Local Storage Protocol: AES-CBC-256",
+                                            fontSize = 9.sp,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                                        )
+                                        Text(
+                                            text = "• Cryptographic IV:\n  ${msg.iv}",
+                                            fontSize = 8.sp,
+                                            fontFamily = FontFamily.Monospace,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            text = "• Encrypted Ciphertext Packet:\n  ${msg.encryptedContent}",
+                                            fontSize = 8.sp,
+                                            fontFamily = FontFamily.Monospace,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(top = 2.dp)
+                                        )
+                                        Text(
+                                            text = "• System Integrity Verified: YES",
+                                            fontSize = 9.sp,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(top = 4.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -1818,6 +1822,32 @@ fun ChatRoomScreen(viewModel: MainViewModel, chatId: String) {
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun IcebreakerPanel(viewModel: MainViewModel, onIcebreakerClick: (String) -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Start the conversation",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        viewModel.icebreakers.forEach { icebreaker ->
+            OutlinedButton(
+                onClick = { onIcebreakerClick(icebreaker) },
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+            ) {
+                Text(text = icebreaker)
             }
         }
     }

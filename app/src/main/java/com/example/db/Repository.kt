@@ -55,6 +55,29 @@ class AppRepository(
         chatRoomDao.updateLastMessage(chatId, cleartext, message.timestamp)
     }
 
+    suspend fun receiveSecureMessage(chatId: String, senderName: String, encryptedContent: String, iv: String) {
+        // Decrypt to moderate
+        val cleartext = CryptoHelper.decrypt(encryptedContent, iv, chatId)
+        val moderationResult = com.example.security.GeminiModerator.moderateContent(cleartext)
+        
+        if (moderationResult.isSafe) {
+            val message = ChatMessage(
+                chatId = chatId,
+                senderName = senderName,
+                encryptedContent = encryptedContent,
+                iv = iv,
+                timestamp = System.currentTimeMillis()
+            )
+            
+            chatMessageDao.insertMessage(message)
+            // Update the chat room with a secure snippet
+            chatRoomDao.updateLastMessage(chatId, cleartext, message.timestamp)
+        } else {
+            // Log unsafe incoming message
+            android.util.Log.w("AppRepository", "Blocked unsafe incoming message: ${moderationResult.flagReason}")
+        }
+    }
+
     suspend fun deleteAllMessages() {
         chatMessageDao.deleteAllMessages()
     }

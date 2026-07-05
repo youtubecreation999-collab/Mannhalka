@@ -159,6 +159,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         isPrivacyMode.value = enabled
     }
 
+    val icebreakers = listOf(
+        "Hi there! Looking forward to chatting.",
+        "What's on your mind today?",
+        "Hello! How are you doing?",
+        "Hope you're having a great day!"
+    )
+
     // E2EE State
     val userPublicKey = MutableStateFlow(MockEncryptionEngine.publicKey)
     val peerPublicKey = MutableStateFlow<String?>(null)
