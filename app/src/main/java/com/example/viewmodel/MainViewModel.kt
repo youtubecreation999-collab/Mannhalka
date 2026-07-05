@@ -153,6 +153,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val lastInteractionTime = MutableStateFlow(System.currentTimeMillis())
     private val timeoutDuration = 300000L // 5 minutes
 
+    // Privacy Mode
+    val isPrivacyMode = MutableStateFlow(false)
+    fun setPrivacyMode(enabled: Boolean) {
+        isPrivacyMode.value = enabled
+    }
+
     // E2EE State
     val userPublicKey = MutableStateFlow(MockEncryptionEngine.publicKey)
     val peerPublicKey = MutableStateFlow<String?>(null)

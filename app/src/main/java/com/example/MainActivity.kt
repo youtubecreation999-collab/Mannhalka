@@ -14,6 +14,8 @@ import com.example.ui.theme.MyApplicationTheme
 import com.example.viewmodel.MainViewModel
 
 class MainActivity : FragmentActivity() {
+  private lateinit var viewModel: MainViewModel
+
   override fun onCreate(savedInstanceState: Bundle?) {
     // Enable ultimate crash immunity self-healing engine
     com.example.security.SecurityExceptionHandler.initialize(this)
@@ -26,9 +28,23 @@ class MainActivity : FragmentActivity() {
     
     setContent {
       MyApplicationTheme {
-        val viewModel: MainViewModel = viewModel()
+        viewModel = viewModel()
         MainAppContainer(viewModel = viewModel)
       }
+    }
+  }
+
+  override fun onPause() {
+    super.onPause()
+    if (::viewModel.isInitialized) {
+        viewModel.setPrivacyMode(true)
+    }
+  }
+
+  override fun onResume() {
+    super.onResume()
+    if (::viewModel.isInitialized) {
+        viewModel.setPrivacyMode(false)
     }
   }
 }

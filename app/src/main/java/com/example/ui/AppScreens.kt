@@ -1,6 +1,7 @@
 package com.example.ui
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -268,7 +269,29 @@ fun ProfileScreen(viewModel: MainViewModel) {
 }
 
 @Composable
-fun SecurityOverlay() {
+fun SecurityOverlay(viewModel: MainViewModel) {
+    val isPrivacyMode by viewModel.isPrivacyMode.collectAsState()
+    val alpha by animateFloatAsState(targetValue = if (isPrivacyMode) 0.95f else 0.0f, label = "Alpha")
+    
+    if (alpha > 0f) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background.copy(alpha = alpha))
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            awaitPointerEvent()
+                            // Block interactions
+                        }
+                    }
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Privacy Mode Active", style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.onBackground)
+        }
+    }
+
     Canvas(modifier = Modifier.fillMaxSize()) {
         // Draw very subtle, fine, semi-transparent diagonal security lines to deter external photos
         val spacing = 48.dp.toPx()
@@ -376,7 +399,7 @@ fun MainAppContainer(viewModel: MainViewModel) {
             }
 
             // Secure, transparent visual security layer overlaid on top of the root layout
-            SecurityOverlay()
+            SecurityOverlay(viewModel)
         }
     }
 }
