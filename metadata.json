@@ -1,0 +1,6 @@
+{
+  "name": "MANNHALKA",
+  "description": "MANNHALKA is a ultra-secure anonymous platform for sharing raw feelings. It features screenshot prevention, passcode/biometric lock, simulated end-to-end encryption for private 1-on-1 messaging, real-time AI content moderation, and download restrictions to keep your data safe and anonymous.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
