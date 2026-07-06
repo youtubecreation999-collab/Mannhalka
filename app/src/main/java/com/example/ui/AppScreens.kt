@@ -1006,6 +1006,7 @@ fun PasscodeScreen(viewModel: MainViewModel, isSetup: Boolean) {
 
                             override fun reject(code: String, message: String) {
                                 biometricError = "Biometric authentication is mandatory."
+                                runBiometric() // Re-trigger on failure/cancel
                             }
                         }
                     )
@@ -1196,6 +1197,7 @@ fun PasscodeScreen(viewModel: MainViewModel, isSetup: Boolean) {
                         Box(
                             modifier = Modifier
                                 .size(72.dp)
+                                .aspectRatio(1f)
                                 .clip(CircleShape)
                                 .clickable(enabled = isEnabled) {
                                     when (key) {
