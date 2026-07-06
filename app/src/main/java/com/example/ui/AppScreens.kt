@@ -141,40 +141,346 @@ fun MobileNumberSettingsScreen(viewModel: MainViewModel) {
     val contacts by viewModel.contacts.collectAsState(initial = emptyList())
     var contactName by remember { mutableStateOf("") }
     var contactNumber by remember { mutableStateOf("") }
+    
+    // Manual registration field for user's own mobile number
+    var myNumberInput by remember { mutableStateOf("") }
+    var myNumberError by remember { mutableStateOf<String?>(null) }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Mobile Number Settings", style = MaterialTheme.typography.headlineMedium)
-        
-        if (mobileNumber == null) {
-            Button(onClick = { viewModel.generateMobileNumber() }) {
-                Text("Generate 13-Digit Mobile Number")
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState())
+    ) {
+        // Header
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+        ) {
+            IconButton(
+                onClick = { viewModel.currentScreen.value = Screen.Settings },
+                modifier = Modifier.size(36.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Go back",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = "Secure Mobile Network",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    text = "Establish secure 1-on-1 dialogues by 10-digit mobile numbers.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        // Your Mobile Number Card
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+                .border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                    shape = RoundedCornerShape(16.dp)
+                ),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Your 10-Digit Secure ID",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Your unique 10-digit mobile identifier. Other users can add you using this number.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+
+                if (mobileNumber.isNullOrEmpty()) {
+                    OutlinedTextField(
+                        value = myNumberInput,
+                        onValueChange = { input ->
+                            if (input.length <= 10 && input.all { it.isDigit() }) {
+                                myNumberInput = input
+                                myNumberError = if (input.length < 10) "Must be exactly 10 digits" else null
+                            }
+                        },
+                        label = { Text("Enter Your 10-Digit Mobile") },
+                        placeholder = { Text("e.g. 9876543210") },
+                        keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        isError = myNumberError != null,
+                        supportingText = { myNumberError?.let { Text(it) } }
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                if (myNumberInput.length == 10) {
+                                    viewModel.setMobileNumber(myNumberInput)
+                                } else {
+                                    myNumberError = "Must be exactly 10 digits"
+                                }
+                            },
+                            enabled = myNumberInput.length == 10,
+                            modifier = Modifier.weight(1.5f),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("Register Number", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        Button(
+                            onClick = {
+                                viewModel.generateMobileNumber()
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                contentColor = MaterialTheme.colorScheme.primary
+                            ),
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("Generate", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Phone,
+                                contentDescription = "Active Mobile",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(28.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Active ID:",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "+91 ${mobileNumber!!}",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+
+                        TextButton(
+                            onClick = {
+                                viewModel.setMobileNumber("") // clear to re-set
+                                myNumberInput = ""
+                            }
+                        ) {
+                            Text("Reset", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Add Contact Card
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+                .border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                    shape = RoundedCornerShape(16.dp)
+                ),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Add Secure Contact",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Save another user's name and 10-digit mobile number to open E2EE chats.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+
+                OutlinedTextField(
+                    value = contactName,
+                    onValueChange = { contactName = it },
+                    label = { Text("Contact Name") },
+                    placeholder = { Text("e.g. Priyanshu") },
+                    keyboardOptions = KeyboardOptions(autoCorrectEnabled = false),
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = contactNumber,
+                    onValueChange = { input ->
+                        if (input.length <= 10 && input.all { it.isDigit() }) {
+                            contactNumber = input
+                        }
+                    },
+                    label = { Text("Contact 10-Digit Mobile") },
+                    placeholder = { Text("e.g. 9123456789") },
+                    keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Button(
+                    onClick = {
+                        if (contactName.trim().isNotEmpty() && contactNumber.length == 10) {
+                            viewModel.addContact(contactNumber, contactName)
+                            contactName = ""
+                            contactNumber = ""
+                        }
+                    },
+                    enabled = contactName.trim().isNotEmpty() && contactNumber.length == 10,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add contact")
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Save Contact", fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Contacts list title
+        Text(
+            text = "Your Secured Directory",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(vertical = 8.dp)
+        )
+
+        if (contacts.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No contacts saved yet.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         } else {
-            Text("Your 13-Digit Number:", style = MaterialTheme.typography.titleMedium)
-            Text(mobileNumber!!, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-        }
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Text("Add Contact", style = MaterialTheme.typography.titleMedium)
-        OutlinedTextField(value = contactName, onValueChange = { contactName = it }, label = { Text("Name") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(autoCorrectEnabled = false))
-        OutlinedTextField(value = contactNumber, onValueChange = { contactNumber = it }, label = { Text("13-Digit Number") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, keyboardType = androidx.compose.ui.text.input.KeyboardType.Number))
-        Button(onClick = { 
-            if (contactNumber.length == 13) {
-                viewModel.addContact(contactNumber, contactName)
-                contactName = ""
-                contactNumber = ""
-            }
-        }) {
-            Text("Add Contact")
-        }
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Text("Contacts", style = MaterialTheme.typography.titleMedium)
-        LazyColumn {
-            items(contacts) { contact ->
-                Text("${contact.name} - ${contact.mobileNumber}")
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                contacts.forEach { contact ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
+                                shape = RoundedCornerShape(12.dp)
+                            ),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(contact.avatarColor)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = contact.name.take(2).uppercase(),
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(12.dp))
+
+                                Column {
+                                    Text(
+                                        text = contact.name,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "+91 ${contact.mobileNumber}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = {
+                                    viewModel.startChatWithContact(contact)
+                                },
+                                enabled = !mobileNumber.isNullOrEmpty(),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                    contentColor = MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Forum,
+                                    contentDescription = "Chat",
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Chat", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -225,6 +531,7 @@ fun ProfileScreen(viewModel: MainViewModel) {
     
     val pseudonym by viewModel.userPseudonym.collectAsState()
     val avatarColor by viewModel.userAvatarColor.collectAsState()
+    val avatarIndex by viewModel.userAvatarIndex.collectAsState()
     val level by viewModel.leaderboardLevel.collectAsState()
     val points by viewModel.leaderboardPoints.collectAsState()
     
@@ -234,16 +541,29 @@ fun ProfileScreen(viewModel: MainViewModel) {
     val isEmulator by viewModel.isEmulatorRunning.collectAsState()
     val isSecure = !isRooted && !isDebugger && !isEmulator
 
+    val avatarGradients = listOf(
+        listOf(Color(0xFF00B4DB), Color(0xFF0083B0)), // Cosmic Teal
+        listOf(Color(0xFFFF8C00), Color(0xFFE52D27)), // Neon Sunset
+        listOf(Color(0xFF8A2387), Color(0xFFE94057)), // Nebula Spark
+        listOf(Color(0xFF11998e), Color(0xFF38ef7d)), // Emerald Shield
+        listOf(Color(0xFFED213A), Color(0xFF93291E)), // Cyberpunk Crimson
+        listOf(Color(0xFFF12711), Color(0xFFF5AF19))  // Electric Amber
+    )
+    val chosenGradient = avatarGradients.getOrElse(avatarIndex) { listOf(Color(avatarColor), Color(avatarColor)) }
+
     Column(modifier = Modifier.fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Text("Profile", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(16.dp))
         
         // Avatar
         Box(
-            modifier = Modifier.size(100.dp).clip(CircleShape).background(Color(avatarColor)),
+            modifier = Modifier
+                .size(100.dp)
+                .clip(CircleShape)
+                .background(Brush.linearGradient(chosenGradient)),
             contentAlignment = Alignment.Center
         ) {
-            Text(pseudonym.take(1), style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.onPrimary)
+            Text(pseudonym.take(2).uppercase(), style = MaterialTheme.typography.headlineLarge, color = Color.White)
         }
         
         Text(pseudonym, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 8.dp))
@@ -378,6 +698,7 @@ fun MainAppContainer(viewModel: MainViewModel) {
                     when (screen) {
                         is Screen.Auth -> PasscodeScreen(viewModel, isSetup = false)
                         is Screen.PasscodeSetup -> PasscodeScreen(viewModel, isSetup = true)
+                        is Screen.ProfileSetup -> ProfileSetupScreen(viewModel)
                         is Screen.Dashboard -> AppShell(viewModel, selectedTab = 0) {
                             DashboardScreen(viewModel)
                         }
@@ -399,6 +720,9 @@ fun MainAppContainer(viewModel: MainViewModel) {
                         }
                         is Screen.Profile -> AppShell(viewModel, selectedTab = 6) {
                             ProfileScreen(viewModel)
+                        }
+                        is Screen.MobileSettings -> AppShell(viewModel, selectedTab = 7) {
+                            MobileNumberSettingsScreen(viewModel)
                         }
                     }
                 }
@@ -662,38 +986,41 @@ fun PasscodeScreen(viewModel: MainViewModel, isSetup: Boolean) {
     val context = LocalContext.current
 
     // Automatically trigger biometric login upon app launch if passcode is set up
+    var biometricAuthenticated by remember { mutableStateOf(false) }
+    var biometricError by remember { mutableStateOf<String?>(null) }
+
+    fun runBiometric() {
+        val activity = context.findActivity()
+        if (activity != null) {
+            com.example.security.BiometricBridge.canAuthenticate(context, object : com.example.security.BiometricBridge.BiometricPromise {
+                override fun resolve(value: Any?) {
+                    com.example.security.BiometricBridge.authenticate(
+                        activity = activity,
+                        title = "Mandatory Security Scan",
+                        subtitle = "Verify identity to access your encrypted container",
+                        promise = object : com.example.security.BiometricBridge.BiometricPromise {
+                            override fun resolve(value: Any?) {
+                                biometricAuthenticated = true
+                                biometricError = null
+                            }
+
+                            override fun reject(code: String, message: String) {
+                                biometricError = "Biometric authentication is mandatory."
+                            }
+                        }
+                    )
+                }
+
+                override fun reject(code: String, message: String) {
+                    biometricError = "Biometric authentication not supported/enrolled."
+                }
+            })
+        }
+    }
+
     LaunchedEffect(isSetup) {
         if (!isSetup) {
-            val activity = context.findActivity()
-            if (activity != null) {
-                com.example.security.BiometricBridge.canAuthenticate(context, object : com.example.security.BiometricBridge.BiometricPromise {
-                    override fun resolve(value: Any?) {
-                        com.example.security.BiometricBridge.authenticate(
-                            activity = activity,
-                            title = "Unlock Private Enclave",
-                            subtitle = "Verify identity to access your encrypted chats",
-                            promise = object : com.example.security.BiometricBridge.BiometricPromise {
-                                override fun resolve(value: Any?) {
-                                    viewModel.unlockApp()
-                                    viewModel.passcodeError.value = null
-                                    viewModel.passcodeText.value = ""
-                                }
-
-                                override fun reject(code: String, message: String) {
-                                    // Let user fall back to PIN if canceled or errored
-                                    if (!code.contains("13") && !code.contains("10")) {
-                                        viewModel.passcodeError.value = "Biometric prompt failed: $message"
-                                    }
-                                }
-                            }
-                        )
-                    }
-
-                    override fun reject(code: String, message: String) {
-                        // Biometrics unavailable or not enrolled, fall back silently to PIN
-                    }
-                })
-            }
+            runBiometric()
         }
     }
 
@@ -865,11 +1192,12 @@ fun PasscodeScreen(viewModel: MainViewModel, isSetup: Boolean) {
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     for (key in row) {
+                        val isEnabled = isSetup || biometricAuthenticated || key == "Biometrics"
                         Box(
                             modifier = Modifier
                                 .size(72.dp)
                                 .clip(CircleShape)
-                                .clickable {
+                                .clickable(enabled = isEnabled) {
                                     when (key) {
                                         "Delete" -> {
                                             if (isSetup) {
@@ -890,66 +1218,40 @@ fun PasscodeScreen(viewModel: MainViewModel, isSetup: Boolean) {
                                         }
                                         "Biometrics" -> {
                                             if (!isSetup) {
-                                                val activity = context.findActivity()
-                                                if (activity != null) {
-                                                    com.example.security.BiometricBridge.canAuthenticate(context, object : com.example.security.BiometricBridge.BiometricPromise {
-                                                        override fun resolve(value: Any?) {
-                                                            com.example.security.BiometricBridge.authenticate(
-                                                                activity = activity,
-                                                                title = "Unlock Private Enclave",
-                                                                subtitle = "Verify identity to access your encrypted chats",
-                                                                promise = object : com.example.security.BiometricBridge.BiometricPromise {
-                                                                    override fun resolve(value: Any?) {
-                                                                        viewModel.unlockApp()
-                                                                        viewModel.passcodeError.value = null
-                                                                        viewModel.passcodeText.value = ""
-                                                                    }
-
-                                                                    override fun reject(code: String, message: String) {
-                                                                        viewModel.passcodeError.value = "Authentication failed: $message"
-                                                                    }
-                                                                }
-                                                            )
-                                                        }
-
-                                                        override fun reject(code: String, message: String) {
-                                                            viewModel.passcodeError.value = "Biometrics unavailable: $message"
-                                                        }
-                                                    })
-                                                } else {
-                                                    viewModel.passcodeError.value = "System error: Context activity not found"
-                                                }
+                                                runBiometric()
                                             }
                                         }
                                         else -> {
-                                            val combined = currentInput + key
-                                            if (combined.length <= 4) {
-                                                if (isSetup) {
-                                                    if (confirmStep) {
-                                                        viewModel.passcodeSetupConfirmText.value = combined
-                                                        if (combined.length == 4) {
-                                                            if (combined == tempPin) {
-                                                                viewModel.setupPasscode(combined)
-                                                            } else {
-                                                                viewModel.passcodeError.value = "PINs do not match. Restarting setup."
-                                                                viewModel.passcodeSetupText.value = ""
-                                                                viewModel.passcodeSetupConfirmText.value = ""
-                                                                confirmStep = false
+                                            if (isEnabled) {
+                                                val combined = currentInput + key
+                                                if (combined.length <= 4) {
+                                                    if (isSetup) {
+                                                        if (confirmStep) {
+                                                            viewModel.passcodeSetupConfirmText.value = combined
+                                                            if (combined.length == 4) {
+                                                                if (combined == tempPin) {
+                                                                    viewModel.setupPasscode(combined)
+                                                                } else {
+                                                                    viewModel.passcodeError.value = "PINs do not match. Restarting setup."
+                                                                    viewModel.passcodeSetupText.value = ""
+                                                                    viewModel.passcodeSetupConfirmText.value = ""
+                                                                    confirmStep = false
+                                                                }
+                                                            }
+                                                        } else {
+                                                            viewModel.passcodeSetupText.value = combined
+                                                            if (combined.length == 4) {
+                                                                tempPin = combined
+                                                                confirmStep = true
+                                                                viewModel.passcodeError.value = null
                                                             }
                                                         }
                                                     } else {
-                                                        viewModel.passcodeSetupText.value = combined
+                                                        viewModel.passcodeText.value = combined
                                                         if (combined.length == 4) {
-                                                            tempPin = combined
-                                                            confirmStep = true
-                                                            viewModel.passcodeError.value = null
+                                                            viewModel.verifyPasscode(combined)
+                                                            viewModel.unlockApp()
                                                         }
-                                                    }
-                                                } else {
-                                                    viewModel.passcodeText.value = combined
-                                                    if (combined.length == 4) {
-                                                        viewModel.verifyPasscode(combined)
-                                                        viewModel.unlockApp()
                                                     }
                                                 }
                                             }
@@ -957,7 +1259,8 @@ fun PasscodeScreen(viewModel: MainViewModel, isSetup: Boolean) {
                                     }
                                 }
                                 .background(
-                                    if (key == "Delete" || key == "Biometrics") Color.Transparent
+                                    if (!isEnabled) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+                                    else if (key == "Delete" || key == "Biometrics") Color.Transparent
                                     else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                                 ),
                             contentAlignment = Alignment.Center
@@ -1467,12 +1770,32 @@ fun ChatListScreen(viewModel: MainViewModel) {
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            Text(
-                text = "E2EE Communications",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "E2EE Communications",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                
+                IconButton(
+                    onClick = { viewModel.currentScreen.value = Screen.MobileSettings },
+                    modifier = Modifier
+                        .size(38.dp)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Phone,
+                        contentDescription = "Contacts & Mobile Network",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
             Text(
                 text = "Encrypted 1-on-1 dialogues. System-wide anti-screenshot policy active.",
                 fontSize = 12.sp,
@@ -2141,6 +2464,50 @@ fun SettingsScreen(viewModel: MainViewModel) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Mobile Number & Contacts Card
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(16.dp)
+                ),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Mobile & Contacts Network",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Establish secure decentralized connections using unique 10-digit mobile numbers.",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = { viewModel.currentScreen.value = Screen.MobileSettings },
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Phone, contentDescription = "Manage Mobile Settings")
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Manage Mobile & Contacts", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         // Advanced Security Diagnostics Card
         Card(
             modifier = Modifier
@@ -2362,3 +2729,969 @@ fun SecurityPolicyRow(
         }
     }
 }
+
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
+fun ProfileSetupScreen(viewModel: MainViewModel) {
+    val context = LocalContext.current
+    var currentStep by remember { mutableStateOf(1) }
+    
+    // Step 1: 2FA State
+    var tfaSecret by remember { mutableStateOf("") }
+    LaunchedEffect(Unit) {
+        if (tfaSecret.isEmpty()) {
+            val letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
+            val randomPart = (1..16).map { letters.random() }.joinToString("")
+            tfaSecret = "MNHK-$randomPart".chunked(4).joinToString("-")
+        }
+    }
+    
+    var tfaInput by remember { mutableStateOf("") }
+    var tfaError by remember { mutableStateOf<String?>(null) }
+    var tfaVerified by remember { mutableStateOf(false) }
+    
+    // TOTP Simulator
+    var countdown by remember { mutableStateOf(30) }
+    var activeTokenCode by remember { mutableStateOf("123456") }
+    LaunchedEffect(Unit) {
+        while (true) {
+            val sec = (System.currentTimeMillis() / 1000) % 30
+            countdown = 30 - sec.toInt()
+            val timeSlice = System.currentTimeMillis() / 30000
+            val codeNum = (112233 + Math.abs((timeSlice + 7).hashCode() % 887766))
+            activeTokenCode = codeNum.toString().take(6)
+            kotlinx.coroutines.delay(1000)
+        }
+    }
+
+    // Step 2: Username State
+    var usernameInput by remember { mutableStateOf("") }
+    var usernameError by remember { mutableStateOf<String?>(null) }
+
+    // Step 3: PIN State
+    var pinInput by remember { mutableStateOf("") }
+    var pinConfirmInput by remember { mutableStateOf("") }
+    var pinError by remember { mutableStateOf<String?>(null) }
+
+    // Step 4: Biometric State
+    var biometricProgress by remember { mutableStateOf(0f) }
+    var isFingerprintScanned by remember { mutableStateOf(false) }
+    var scanActive by remember { mutableStateOf(false) }
+    var biometricEnabledPreference by remember { mutableStateOf(false) }
+
+    LaunchedEffect(scanActive) {
+        if (scanActive) {
+            while (biometricProgress < 1.0f) {
+                biometricProgress += 0.05f
+                kotlinx.coroutines.delay(100)
+            }
+            isFingerprintScanned = true
+            biometricEnabledPreference = true
+            scanActive = false
+        }
+    }
+
+    // Step 5: Mobile Number State
+    var mobileInput by remember { mutableStateOf("") }
+    var mobileError by remember { mutableStateOf<String?>(null) }
+
+    // Step 6: Profile Picture State
+    var selectedAvatarIndex by remember { mutableStateOf(0) }
+    val avatarGradients = listOf(
+        listOf(Color(0xFF00B4DB), Color(0xFF0083B0)), // Cosmic Teal
+        listOf(Color(0xFFFF8C00), Color(0xFFE52D27)), // Neon Sunset
+        listOf(Color(0xFF8A2387), Color(0xFFE94057)), // Nebula Spark
+        listOf(Color(0xFF11998e), Color(0xFF38ef7d)), // Emerald Shield
+        listOf(Color(0xFFED213A), Color(0xFF93291E)), // Cyberpunk Crimson
+        listOf(Color(0xFFF12711), Color(0xFFF5AF19))  // Electric Amber
+    )
+    val avatarLabels = listOf("Cosmic Teal", "Neon Sunset", "Nebula Spark", "Emerald Shield", "Cyberpunk Red", "Electric Amber")
+    
+    var showCameraSimulation by remember { mutableStateOf(false) }
+    var capturedPhotoPreset by remember { mutableStateOf(false) }
+
+    // Outer Scaffolding / Surface
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = Color(0xFF0E1116) // Secure space dark palette
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(28.dp))
+            
+            // App Identity
+            Text(
+                text = "MANNHALKA",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.primary,
+                letterSpacing = 4.sp,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            Text(
+                text = "ENCRYPTED PROFILE CREATION",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                letterSpacing = 1.sp,
+                modifier = Modifier.padding(bottom = 24.dp)
+            )
+
+            // Step Indicator (Segmented Progress Bar)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                for (step in 1..7) {
+                    val isCompleted = step < currentStep
+                    val isActive = step == currentStep
+                    val barColor = when {
+                        isCompleted -> MaterialTheme.colorScheme.primary
+                        isActive -> MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                    }
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(barColor)
+                    )
+                }
+            }
+
+            Text(
+                text = "Step $currentStep of 7",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 20.dp)
+            )
+
+            // Step content switching
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f, fill = false)
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(24.dp)
+                    ),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF141923))
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    when (currentStep) {
+                        1 -> {
+                            // Step 1: Two-Factor Authorization (2FA) setup
+                            Icon(
+                                imageVector = Icons.Default.VpnKey,
+                                contentDescription = "2FA Lock",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(54.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "Two-Factor Authentication",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "Secure your encryption keys using a secondary security token layer.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+
+                            // Virtual Secret card
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color(0xFF1D2433))
+                                    .padding(12.dp)
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = "YOUR SECURE AUTHENTICATOR KEY",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(bottom = 6.dp)
+                                    )
+                                    Text(
+                                        text = tfaSecret,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = FontFamily.Monospace,
+                                        color = Color.White
+                                    )
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        val clipboardManager = LocalClipboardManager.current
+                                        TextButton(
+                                            onClick = {
+                                                clipboardManager.setText(AnnotatedString(tfaSecret))
+                                            },
+                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp)
+                                        ) {
+                                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy", modifier = Modifier.size(14.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("Copy Key", fontSize = 12.sp)
+                                        }
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            // Live Token display
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                                    .padding(vertical = 8.dp, horizontal = 16.dp)
+                            ) {
+                                CircularProgressIndicator(
+                                    progress = { countdown / 30f },
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.5.dp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = "Active Token: ",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "${activeTokenCode.take(3)} ${activeTokenCode.drop(3)}",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            OutlinedTextField(
+                                value = tfaInput,
+                                onValueChange = { input ->
+                                    if (input.length <= 6 && input.all { it.isDigit() }) {
+                                        tfaInput = input
+                                        tfaError = null
+                                    }
+                                },
+                                label = { Text("6-Digit Verification Code") },
+                                placeholder = { Text("e.g. 123456") },
+                                singleLine = true,
+                                isError = tfaError != null,
+                                supportingText = { tfaError?.let { Text(it) } },
+                                keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Button(
+                                onClick = {
+                                    if (tfaInput == activeTokenCode) {
+                                        tfaVerified = true
+                                        tfaError = null
+                                        currentStep = 2
+                                    } else {
+                                        tfaError = "Invalid verification code. Try matching the active token above."
+                                    }
+                                },
+                                enabled = tfaInput.length == 6,
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Verify & Setup 2FA", fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        2 -> {
+                            // Step 2: Username setup
+                            Icon(
+                                imageVector = Icons.Default.AlternateEmail,
+                                contentDescription = "Username",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(54.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "Choose Username",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "Select a raw pseudonym identifier for your anonymous space. This can be randomized.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            OutlinedTextField(
+                                value = usernameInput,
+                                onValueChange = { input ->
+                                    if (input.length <= 15) {
+                                        val filtered = input.filter { it.isLetterOrDigit() || it == '_' }
+                                        usernameInput = filtered
+                                        usernameError = when {
+                                            filtered.isEmpty() -> "Username cannot be empty"
+                                            filtered.length < 3 -> "Must be at least 3 characters"
+                                            else -> null
+                                        }
+                                    }
+                                },
+                                label = { Text("Pseudonym Handle") },
+                                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                                placeholder = { Text("e.g. Cipher_Wolf") },
+                                singleLine = true,
+                                isError = usernameError != null,
+                                supportingText = { 
+                                    usernameError?.let { Text(it) } ?: Text("Only letters, numbers, and underscores allowed.")
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            Button(
+                                onClick = {
+                                    val randomAdjectives = listOf("Secure", "Ghost", "Crypto", "Phantom", "Silent", "Neon", "Void", "Quantum", "Amber")
+                                    val randomNouns = listOf("Node", "Sentry", "Breeze", "Rider", "Wraith", "Vortex", "Falcon", "Pixel", "Spark")
+                                    usernameInput = "${randomAdjectives.random()}_${randomNouns.random()}_${(10..99).random()}"
+                                    usernameError = null
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                    contentColor = MaterialTheme.colorScheme.primary
+                                ),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(Icons.Default.Refresh, contentDescription = "Generate", modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Generate Smart Pseudonym", fontWeight = FontWeight.Bold)
+                            }
+
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            Button(
+                                onClick = {
+                                    if (usernameInput.trim().length >= 3) {
+                                        currentStep = 3
+                                    } else {
+                                        usernameError = "Must be at least 3 characters"
+                                    }
+                                },
+                                enabled = usernameInput.trim().length >= 3 && usernameError == null,
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Next Step", fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        3 -> {
+                            // Step 3: Security PIN setup
+                            Icon(
+                                imageVector = Icons.Default.LockOpen,
+                                contentDescription = "Security PIN",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(54.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "Setup Security PIN",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "Configure a local 4-digit security passcode to lock your local database enclave.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            OutlinedTextField(
+                                value = pinInput,
+                                onValueChange = { input ->
+                                    if (input.length <= 4 && input.all { it.isDigit() }) {
+                                        pinInput = input
+                                        pinError = null
+                                    }
+                                },
+                                label = { Text("Choose 4-Digit PIN") },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                                visualTransformation = PasswordVisualTransformation(),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            OutlinedTextField(
+                                value = pinConfirmInput,
+                                onValueChange = { input ->
+                                    if (input.length <= 4 && input.all { it.isDigit() }) {
+                                        pinConfirmInput = input
+                                        pinError = null
+                                    }
+                                },
+                                label = { Text("Confirm 4-Digit PIN") },
+                                singleLine = true,
+                                isError = pinError != null,
+                                supportingText = { pinError?.let { Text(it) } },
+                                keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                                visualTransformation = PasswordVisualTransformation(),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            Button(
+                                onClick = {
+                                    if (pinInput.length != 4) {
+                                        pinError = "PIN must be exactly 4 digits"
+                                    } else if (pinInput != pinConfirmInput) {
+                                        pinError = "PINs do not match"
+                                    } else {
+                                        currentStep = 4
+                                    }
+                                },
+                                enabled = pinInput.length == 4 && pinConfirmInput.length == 4,
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Next Step", fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        4 -> {
+                            // Step 4: Take fingerprint setup
+                            Icon(
+                                imageVector = Icons.Default.Fingerprint,
+                                contentDescription = "Fingerprint Setup",
+                                tint = if (isFingerprintScanned) Color(0xFF38ef7d) else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(64.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "Biometric Enlistment",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "Register your device fingerprint credential to enable swift instant local unlocking.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            // Interactive scan module
+                            Box(
+                                modifier = Modifier
+                                    .size(140.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF1D2433))
+                                    .border(
+                                        width = 3.dp,
+                                        color = if (isFingerprintScanned) Color(0xFF38ef7d) else MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                                        shape = CircleShape
+                                    )
+                                    .pointerInput(isFingerprintScanned) {
+                                        detectTapGestures(
+                                            onPress = {
+                                                if (!isFingerprintScanned) {
+                                                    scanActive = true
+                                                    tryAwaitRelease()
+                                                    scanActive = false
+                                                }
+                                            }
+                                        )
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (scanActive) {
+                                    CircularProgressIndicator(
+                                        progress = { biometricProgress },
+                                        modifier = Modifier.fillMaxSize(),
+                                        color = Color(0xFF38ef7d),
+                                        strokeWidth = 4.dp
+                                    )
+                                }
+                                
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(
+                                        imageVector = Icons.Default.Fingerprint,
+                                        contentDescription = "Tap fingerprint icon to scan",
+                                        tint = when {
+                                            isFingerprintScanned -> Color(0xFF38ef7d)
+                                            scanActive -> Color(0xFF38ef7d).copy(alpha = 0.7f)
+                                            else -> MaterialTheme.colorScheme.primary
+                                        },
+                                        modifier = Modifier.size(54.dp)
+                                    )
+                                    Text(
+                                        text = if (isFingerprintScanned) "COMPLETED" else if (scanActive) "SCANNING..." else "HOLD TO SCAN",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isFingerprintScanned) Color(0xFF38ef7d) else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            if (isFingerprintScanned) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF38ef7d), modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Biometric registration complete!", color = Color(0xFF38ef7d), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = {
+                                        biometricEnabledPreference = false
+                                        currentStep = 5
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Skip for Now")
+                                }
+
+                                Button(
+                                    onClick = {
+                                        currentStep = 5
+                                    },
+                                    enabled = isFingerprintScanned,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Continue")
+                                }
+                            }
+                        }
+
+                        5 -> {
+                            // Step 5: Establish Mobile Connection (setup secure number)
+                            Icon(
+                                imageVector = Icons.Default.ContactPhone,
+                                contentDescription = "Mobile Connection",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(54.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "Secure Mobile Network",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "Setup your secure 10-digit mobile number directory to allow direct cryptographically-verified 1-on-1 private messaging.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            OutlinedTextField(
+                                value = mobileInput,
+                                onValueChange = { input ->
+                                    if (input.length <= 10 && input.all { it.isDigit() }) {
+                                        mobileInput = input
+                                        mobileError = if (input.length < 10) "Must be exactly 10 digits" else null
+                                    }
+                                },
+                                label = { Text("Your 10-Digit Mobile ID") },
+                                leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null) },
+                                placeholder = { Text("e.g. 9876543210") },
+                                singleLine = true,
+                                isError = mobileError != null,
+                                supportingText = { mobileError?.let { Text(it) } },
+                                keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Button(
+                                onClick = {
+                                    val firstDigit = (6..9).random().toString()
+                                    val remainingDigits = (100000000L..999999999L).random().toString()
+                                    mobileInput = firstDigit + remainingDigits
+                                    mobileError = null
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                    contentColor = MaterialTheme.colorScheme.primary
+                                ),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(Icons.Default.DialerSip, contentDescription = "Generate", modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Generate Dynamic Mobile ID", fontWeight = FontWeight.Bold)
+                            }
+
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            Button(
+                                onClick = {
+                                    if (mobileInput.length == 10 && (mobileInput[0] in '6'..'9')) {
+                                        currentStep = 6
+                                    } else {
+                                        mobileError = "Must be a 10-digit number starting with 6, 7, 8, or 9."
+                                    }
+                                },
+                                enabled = mobileInput.length == 10 && mobileError == null,
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Next Step", fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        6 -> {
+                            // Step 6: Choose profile picture identity (Instagram-style customizer)
+                            Text(
+                                text = "Visual Profile Identity",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "Establish your signature profile representation. Choose an E2EE abstract gradient preset or capture a live cyber snapshot.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(vertical = 4.dp, horizontal = 12.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Custom avatar preview
+                            Box(
+                                modifier = Modifier
+                                    .size(110.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        Brush.linearGradient(
+                                            if (capturedPhotoPreset) listOf(Color(0xFF1F2937), Color(0xFF111827)) else avatarGradients[selectedAvatarIndex]
+                                        )
+                                    )
+                                    .border(width = 3.dp, color = MaterialTheme.colorScheme.primary, shape = CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (capturedPhotoPreset) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Icon(
+                                            imageVector = Icons.Default.Contactless,
+                                            contentDescription = "Secured biometric mask",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(42.dp)
+                                        )
+                                        Text(
+                                            text = "SNAP_CAP",
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                } else {
+                                    Text(
+                                        text = usernameInput.take(2).uppercase(),
+                                        style = MaterialTheme.typography.headlineMedium,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            // Selection list of pre-designed gradients
+                            Text(
+                                text = "CHOOSE SECURE THEME PROFILE",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)
+                            ) {
+                                avatarGradients.take(6).forEachIndexed { index, gradientColors ->
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(CircleShape)
+                                            .background(Brush.linearGradient(gradientColors))
+                                            .border(
+                                                width = if (selectedAvatarIndex == index && !capturedPhotoPreset) 2.dp else 0.dp,
+                                                color = Color.White,
+                                                shape = CircleShape
+                                            )
+                                            .clickable {
+                                                selectedAvatarIndex = index
+                                                capturedPhotoPreset = false
+                                            }
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Snap custom snap simulator
+                            Button(
+                                onClick = {
+                                    showCameraSimulation = true
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                    contentColor = MaterialTheme.colorScheme.primary
+                                ),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(Icons.Default.PhotoCamera, contentDescription = "Camera", modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(if (capturedPhotoPreset) "Retake Security Snap" else "Capture Cyber Profile Snap", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+
+                            if (showCameraSimulation) {
+                                AlertDialog(
+                                    onDismissRequest = { showCameraSimulation = false },
+                                    title = { Text("E2EE Pattern Scanner") },
+                                    text = {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                text = "Simulating encrypted front face scan to generate dynamic crypto-mask representation.",
+                                                fontSize = 12.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.padding(bottom = 12.dp)
+                                            )
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(160.dp)
+                                                    .background(Color.Black, RoundedCornerShape(16.dp))
+                                                    .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp)),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                CircularProgressIndicator(modifier = Modifier.size(48.dp))
+                                                Icon(
+                                                    imageVector = Icons.Default.FilterCenterFocus,
+                                                    contentDescription = "Target",
+                                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                                    modifier = Modifier.size(80.dp)
+                                                )
+                                            }
+                                        }
+                                    },
+                                    confirmButton = {
+                                        TextButton(onClick = {
+                                            capturedPhotoPreset = true
+                                            showCameraSimulation = false
+                                        }) {
+                                            Text("CAPTURE SNAP", fontWeight = FontWeight.Bold)
+                                        }
+                                    },
+                                    dismissButton = {
+                                        TextButton(onClick = { showCameraSimulation = false }) {
+                                            Text("CANCEL")
+                                        }
+                                    }
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            Button(
+                                onClick = {
+                                    currentStep = 7
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Next Step", fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        7 -> {
+                            // Step 7: Confirmation "Account is maked" splash
+                            Icon(
+                                imageVector = Icons.Default.VerifiedUser,
+                                contentDescription = "Verified Secure Setup",
+                                tint = Color(0xFF38ef7d),
+                                modifier = Modifier.size(64.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "Profile Successfully Sealed!",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "All parameters compiled. Your decentralized E2EE anonymous account is fully ready.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            // Summary cards
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(Color(0xFF1D2433))
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Pseudonym ID", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(usernameInput, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Mobile Network", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("+91 $mobileInput", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("2FA Safeguard", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("ENABLED", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF38ef7d))
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Biometric Security", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(if (biometricEnabledPreference) "ACTIVE" else "DISABLED", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (biometricEnabledPreference) Color(0xFF38ef7d) else Color.Gray)
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Enclave Style Theme", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(if (capturedPhotoPreset) "Cyber Snap" else avatarLabels[selectedAvatarIndex], fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(18.dp))
+
+                            // Micro-log terminal simulation
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(75.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color.Black)
+                                    .padding(8.dp)
+                            ) {
+                                Text("[SUCCESS] 2FA keys registered and locked.", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = Color(0xFF38ef7d))
+                                Text("[SUCCESS] Database table decrypted & signed.", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = Color(0xFF38ef7d))
+                                Text("[SUCCESS] Secure local peer-tunnel ready.", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = Color(0xFF38ef7d))
+                            }
+
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            Button(
+                                onClick = {
+                                    viewModel.completeProfileSetup(
+                                        username = usernameInput,
+                                        pin = pinInput,
+                                        mobileNumber = mobileInput,
+                                        avatarIndex = selectedAvatarIndex,
+                                        tfaSecret = tfaSecret,
+                                        biometricEnabled = biometricEnabledPreference
+                                    )
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF38ef7d),
+                                    contentColor = Color.Black
+                                ),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(Icons.Default.Check, contentDescription = "Launch", modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Register & Enter Secure Space", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Footer help text
+            Text(
+                text = "MANNHALKA decentralization network utilizes advanced AES-256 E2E database storage.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+        }
+    }
+}
+

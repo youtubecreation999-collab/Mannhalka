@@ -21,6 +21,7 @@ import kotlin.random.Random
 sealed interface Screen {
     object Auth : Screen
     object PasscodeSetup : Screen
+    object ProfileSetup : Screen
     object Feed : Screen
     object Share : Screen
     object ChatList : Screen
@@ -29,6 +30,7 @@ sealed interface Screen {
     object Dashboard : Screen
     object Leaderboard : Screen
     object Profile : Screen
+    object MobileSettings : Screen
 }
 
 sealed interface ModerationState {
@@ -71,6 +73,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // Anonymous User profile
     val userPseudonym = MutableStateFlow("")
     val userAvatarColor = MutableStateFlow(0xFF00796B.toInt()) // Default Teal
+    val userAvatarIndex = MutableStateFlow(0)
+    val user2FaSecret = MutableStateFlow<String?>(null)
+    val isBiometricEnabled = MutableStateFlow(false)
 
     // Leaderboard
     val leaderboardPoints = MutableStateFlow(0)
@@ -229,7 +234,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val pin = repository.getSetting("user_pin")
         if (pin.isNullOrEmpty()) {
             isPasscodeSetup.value = false
-            currentScreen.value = Screen.PasscodeSetup
+            currentScreen.value = Screen.ProfileSetup
         } else {
             isPasscodeSetup.value = true
             currentScreen.value = Screen.Auth
@@ -258,21 +263,32 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             repository.saveSetting("user_pin", "")
             repository.saveSetting("profile_pseudonym", "")
             repository.saveSetting("profile_color", "")
+            repository.saveSetting("profile_avatar_index", "0")
+            repository.saveSetting("profile_2fa_secret", "")
+            repository.saveSetting("profile_biometric_enabled", "false")
             isPasscodeSetup.value = false
             isAuthenticated.value = false
-            currentScreen.value = Screen.PasscodeSetup
+            currentScreen.value = Screen.ProfileSetup
         }
     }
 
     private suspend fun loadUserProfile() {
         var name = repository.getSetting("profile_pseudonym")
         var colorStr = repository.getSetting("profile_color")
+        val avatarIdxStr = repository.getSetting("profile_avatar_index")
+        val tfaSecret = repository.getSetting("profile_2fa_secret")
+        val bioEnabledStr = repository.getSetting("profile_biometric_enabled")
+
+        userAvatarIndex.value = avatarIdxStr?.toIntOrNull() ?: 0
+        user2FaSecret.value = tfaSecret
+        isBiometricEnabled.value = bioEnabledStr == "true"
 
         if (name.isNullOrEmpty()) {
             name = generateRandomPseudonym()
             val randomColor = generateRandomColor()
             repository.saveSetting("profile_pseudonym", name)
             repository.saveSetting("profile_color", randomColor.toString())
+            repository.saveSetting("profile_avatar_index", "0")
             userPseudonym.value = name
             userAvatarColor.value = randomColor
         } else {
@@ -305,6 +321,52 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             } else {
                 passcodeError.value = "PIN must be exactly 4 digits."
             }
+        }
+    }
+
+    fun completeProfileSetup(
+        username: String,
+        pin: String,
+        mobileNumber: String,
+        avatarIndex: Int,
+        tfaSecret: String,
+        biometricEnabled: Boolean
+    ) {
+        viewModelScope.launch {
+            val salt = getOrCreateCryptoSalt()
+            val hashedPin = IntegrityGuard.hashPasscode(pin, salt)
+            
+            // Generate standard dynamic color corresponding to chosen avatar index
+            val presetColors = listOf(
+                0xFF009688.toInt(), // Cosmic Teal
+                0xFFFF5722.toInt(), // Neon Sunset
+                0xFF673AB7.toInt(), // Nebula Spark
+                0xFF4CAF50.toInt(), // Emerald Shield
+                0xFFE91E63.toInt(), // Cyberpunk Crimson
+                0xFFFFC107.toInt()  // Electric Amber
+            )
+            val selectedColor = presetColors.getOrElse(avatarIndex) { 0xFF009688.toInt() }
+
+            // Persist parameters
+            repository.saveSetting("user_pin", hashedPin)
+            repository.saveSetting("profile_pseudonym", username)
+            repository.saveSetting("profile_color", selectedColor.toString())
+            repository.saveSetting("profile_avatar_index", avatarIndex.toString())
+            repository.saveSetting("profile_2fa_secret", tfaSecret)
+            repository.saveSetting("profile_biometric_enabled", biometricEnabled.toString())
+            repository.saveSetting("USER_MOBILE_NUMBER", mobileNumber)
+
+            // Update state Flows
+            userPseudonym.value = username
+            userAvatarColor.value = selectedColor
+            userAvatarIndex.value = avatarIndex
+            user2FaSecret.value = tfaSecret
+            isBiometricEnabled.value = biometricEnabled
+            userMobileNumber.value = mobileNumber
+
+            isPasscodeSetup.value = true
+            isAuthenticated.value = true
+            currentScreen.value = Screen.Feed
         }
     }
 
@@ -461,15 +523,55 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun generateMobileNumber() {
         viewModelScope.launch {
-            val newNumber = (1000000000000L..9999999999999L).random().toString()
+            // Generate a random 10-digit number starting with 6-9
+            val firstDigit = (6..9).random().toString()
+            val remainingDigits = (100000000L..999999999L).random().toString()
+            val newNumber = firstDigit + remainingDigits
             userMobileNumber.value = newNumber
             repository.saveSetting("USER_MOBILE_NUMBER", newNumber)
         }
     }
 
+    fun setMobileNumber(number: String) {
+        viewModelScope.launch {
+            if (number.length == 10 && number.all { it.isDigit() }) {
+                userMobileNumber.value = number
+                repository.saveSetting("USER_MOBILE_NUMBER", number)
+            }
+        }
+    }
+
+    fun startChatWithContact(contact: ContactEntity) {
+        val myNumber = userMobileNumber.value ?: return
+        viewModelScope.launch {
+            // Sort mobile numbers to create a unique and deterministic chatId
+            val sortedNumbers = listOf(myNumber, contact.mobileNumber).sorted()
+            val chatId = "chat_mob_${sortedNumbers[0]}_${sortedNumbers[1]}"
+            
+            val existingRoom = repository.getChatRoomById(chatId)
+            if (existingRoom == null) {
+                // Generate a random avatar color for the chat room
+                val randomColor = generateRandomColor()
+                repository.createChatRoom(
+                    ChatRoom(
+                        chatId = chatId,
+                        participantName = contact.name,
+                        participantAvatarColor = randomColor,
+                        lastMessage = "Started secure chat via mobile connection.",
+                        lastMessageTimestamp = System.currentTimeMillis()
+                    )
+                )
+            }
+            
+            activeChatId.value = chatId
+            currentScreen.value = Screen.ChatRoomScreen(chatId)
+        }
+    }
+
     fun addContact(number: String, name: String) {
         viewModelScope.launch {
-            repository.insertContact(ContactEntity(number, name, 0xFF0000.toInt())) // Mock color
+            val randomColor = generateRandomColor()
+            repository.insertContact(ContactEntity(number, name, randomColor))
         }
     }
 
