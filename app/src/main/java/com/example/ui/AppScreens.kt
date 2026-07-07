@@ -60,6 +60,8 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.view.WindowManager
 import androidx.fragment.app.FragmentActivity
+import android.content.Intent
+import android.speech.RecognizerIntent
 
 fun Context.findActivity(): FragmentActivity? {
     var currentContext = this
@@ -2085,6 +2087,31 @@ fun ChatRoomRow(room: ChatRoom, onClick: () -> Unit) {
     }
 }
 
+@Composable
+fun SecuredBadge() {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.Lock,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.size(10.dp)
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = "Secured",
+            fontSize = 8.sp,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
 // ---------------- SECURE E2EE CHAT DIALOGUE ROOM SCREEN ----------------
 @Composable
 fun ChatRoomScreen(viewModel: MainViewModel, chatId: String) {
@@ -2096,6 +2123,31 @@ fun ChatRoomScreen(viewModel: MainViewModel, chatId: String) {
     val isAuthenticated by viewModel.isAuthenticated.collectAsState()
 
     var textInput by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val voiceManager = remember { VoiceManager(context) {} }
+    DisposableEffect(Unit) { onDispose { voiceManager.shutdown() } }
+
+    val speechLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val spokenText = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.get(0)
+            if (spokenText != null) {
+                textInput = spokenText
+            }
+        }
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            }
+            speechLauncher.launch(intent)
+        }
+    }
 
     BlurOverlay(enabled = !isAuthenticated, modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -2136,12 +2188,16 @@ fun ChatRoomScreen(viewModel: MainViewModel, chatId: String) {
                             Spacer(modifier = Modifier.width(10.dp))
 
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = activeRoom!!.participantName,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = activeRoom!!.participantName,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    SecuredBadge()
+                                }
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(
                                         modifier = Modifier
@@ -2270,6 +2326,18 @@ fun ChatRoomScreen(viewModel: MainViewModel, chatId: String) {
                                             color = MaterialTheme.colorScheme.onSurface
                                         )
                                         Spacer(modifier = Modifier.width(6.dp))
+                                        IconButton(
+                                            onClick = { voiceManager.speak(decryptedText) },
+                                            modifier = Modifier.size(16.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.VolumeUp,
+                                                contentDescription = "Read aloud",
+                                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(6.dp))
                                         Icon(
                                             imageVector = Icons.Default.Lock,
                                             contentDescription = "Encrypted Packet Status",
@@ -2367,7 +2435,12 @@ fun ChatRoomScreen(viewModel: MainViewModel, chatId: String) {
                                 focusedTextColor = MaterialTheme.colorScheme.onSurface,
                                 unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                             ),
-                            singleLine = true
+                            singleLine = true,
+                            leadingIcon = {
+                                IconButton(onClick = { permissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO) }) {
+                                    Icon(Icons.Default.Mic, contentDescription = "Voice input", tint = MaterialTheme.colorScheme.primary)
+                                }
+                            }
                         )
 
                         Spacer(modifier = Modifier.width(8.dp))
