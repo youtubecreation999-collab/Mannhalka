@@ -47,6 +47,24 @@ class MainActivity : FragmentActivity() {
 
   override fun onResume() {
     super.onResume()
+    if (::viewModel.isInitialized && !viewModel.isAuthenticated.value && !viewModel.isAuthenticating.value && viewModel.isPasscodeSetup.value) {
+        viewModel.isAuthenticating.value = true
+        com.example.security.BiometricBridge.authenticate(
+            this,
+            "Authentication Required",
+            "Please authenticate to access the app",
+            object : com.example.security.BiometricBridge.BiometricPromise {
+                override fun resolve(value: Any?) {
+                    viewModel.isAuthenticating.value = false
+                    viewModel.unlockApp()
+                }
+                override fun reject(code: String, message: String) {
+                    viewModel.isAuthenticating.value = false
+                    // Handle rejection: could finish activity or show error
+                }
+            }
+        )
+    }
     if (::viewModel.isInitialized) {
         viewModel.setPrivacyMode(false)
     }

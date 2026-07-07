@@ -809,6 +809,24 @@ fun AppHeader() {
 @Composable
 fun DonationDialog(onDismiss: () -> Unit) {
     val amounts = listOf(10, 20, 50, 100, 200, 500, 1000, 5000, 10000)
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val upiId = androidx.compose.ui.res.stringResource(id = R.string.upi_id)
+    
+    fun launchUpiPayment(amount: Int) {
+        val uri = android.net.Uri.parse("upi://pay").buildUpon()
+            .appendQueryParameter("pa", upiId)
+            .appendQueryParameter("pn", "Mannhalka Donation")
+            .appendQueryParameter("am", amount.toString())
+            .appendQueryParameter("cu", "INR")
+            .build()
+            
+        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            android.widget.Toast.makeText(context, "No payment app found", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
     
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
@@ -817,14 +835,14 @@ fun DonationDialog(onDismiss: () -> Unit) {
             androidx.compose.foundation.layout.Column {
                 amounts.forEach { amount ->
                     androidx.compose.material3.TextButton(
-                        onClick = { /* Handle donation */ onDismiss() },
+                        onClick = { launchUpiPayment(amount); onDismiss() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         androidx.compose.material3.Text("₹$amount")
                     }
                 }
                 androidx.compose.material3.TextButton(
-                    onClick = { /* Handle custom donation */ onDismiss() },
+                    onClick = { launchUpiPayment(10000); onDismiss() },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     androidx.compose.material3.Text("₹10000+")
@@ -2624,6 +2642,26 @@ fun SettingsScreen(viewModel: MainViewModel) {
                         Text("Acknowledge Shield Recovery", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
+            }
+        }
+
+        val messageTtl by viewModel.messageTtl.collectAsState()
+
+        // TTL Setting
+        Text(
+            text = "Self-Destruct Timer",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf(null to "Off", 60000L to "1m", 3600000L to "1h").forEach { (ttl, label) ->
+                FilterChip(
+                    selected = messageTtl == ttl,
+                    onClick = { viewModel.setMessageTtl(ttl) },
+                    label = { Text(label) }
+                )
             }
         }
 

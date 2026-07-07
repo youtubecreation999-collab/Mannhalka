@@ -41,6 +41,9 @@ interface ChatMessageDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMessage(message: ChatMessage)
 
+    @Query("DELETE FROM chat_messages WHERE expiresAt IS NOT NULL AND expiresAt < :currentTime")
+    suspend fun deleteExpiredMessages(currentTime: Long)
+
     @Query("DELETE FROM chat_messages")
     suspend fun deleteAllMessages()
 }

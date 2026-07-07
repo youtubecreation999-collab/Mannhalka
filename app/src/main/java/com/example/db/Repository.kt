@@ -37,7 +37,11 @@ class AppRepository(
         return chatMessageDao.getMessagesForChat(chatId)
     }
 
-    suspend fun sendSecureMessage(chatId: String, senderName: String, cleartext: String) {
+    suspend fun cleanupExpiredMessages() {
+        chatMessageDao.deleteExpiredMessages(System.currentTimeMillis())
+    }
+
+    suspend fun sendSecureMessage(chatId: String, senderName: String, cleartext: String, ttlMillis: Long? = null) {
         // Encrypt the cleartext message with the unique chatId as seed
         val (encryptedText, iv) = CryptoHelper.encrypt(cleartext, chatId)
         
@@ -46,7 +50,8 @@ class AppRepository(
             senderName = senderName,
             encryptedContent = encryptedText,
             iv = iv,
-            timestamp = System.currentTimeMillis()
+            timestamp = System.currentTimeMillis(),
+            expiresAt = ttlMillis?.let { System.currentTimeMillis() + it }
         )
         
         chatMessageDao.insertMessage(message)

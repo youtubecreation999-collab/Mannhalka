@@ -158,6 +158,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     
     // Auto-lock mechanism
     val isLocked = MutableStateFlow(false)
+    val isAuthenticating = MutableStateFlow(false)
     val lastInteractionTime = MutableStateFlow(System.currentTimeMillis())
     private val timeoutDuration = 300000L // 5 minutes
 
@@ -185,6 +186,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // Download link state
     val downloadLink = MutableStateFlow<String?>(null)
+
+    // TTL Setting
+    val messageTtl = MutableStateFlow<Long?>(null) // null means no self-destruct
 
     init {
         viewModelScope.launch {
@@ -228,6 +232,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             loadUserProfile()
             checkPasscodeSetup()
             prepopulateDemoDataIfNeeded()
+            
+            // Load TTL setting
+            val ttlStr = repository.getSetting("message_ttl")
+            messageTtl.value = ttlStr?.toLongOrNull()
+            
+            // Clean up expired messages on startup
+            repository.cleanupExpiredMessages()
+        }
+    }
+
+    fun setMessageTtl(ttlMillis: Long?) {
+        viewModelScope.launch {
+            messageTtl.value = ttlMillis
+            repository.saveSetting("message_ttl", ttlMillis?.toString() ?: "")
         }
     }
 
@@ -489,7 +507,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 repository.sendSecureMessage(
                     chatId = chatId,
                     senderName = userPseudonym.value,
-                    cleartext = cleartext
+                    cleartext = cleartext,
+                    ttlMillis = messageTtl.value
                 )
                 // Reset status after a delay
                 kotlinx.coroutines.delay(2000)

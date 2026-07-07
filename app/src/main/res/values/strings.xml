@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">MANNHALKA</string>
+    <string name="upi_id">your-upi-id@bank</string>
 </resources>

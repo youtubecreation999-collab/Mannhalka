@@ -29,7 +29,8 @@ data class ChatMessage(
     val senderName: String,
     val encryptedContent: String,
     val iv: String,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val expiresAt: Long? = null
 )
 
 @Entity(tableName = "app_settings")
