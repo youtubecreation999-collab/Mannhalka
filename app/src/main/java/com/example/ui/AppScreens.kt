@@ -2119,6 +2119,7 @@ fun ChatRoomScreen(viewModel: MainViewModel, chatId: String) {
     val activeRoom by viewModel.activeChatRoom.collectAsState()
     val userNickname by viewModel.userPseudonym.collectAsState()
     val expandedStates by viewModel.expandedMessageEncryptionState.collectAsState()
+    val chatModerationStatus by viewModel.chatModerationStatus.collectAsState()
 
     val isAuthenticated by viewModel.isAuthenticated.collectAsState()
 
@@ -2404,6 +2405,12 @@ fun ChatRoomScreen(viewModel: MainViewModel, chatId: String) {
                             }
                         }
                     }
+                }
+
+                if (chatModerationStatus is ModerationState.Analyzing) {
+                    Text("Analyzing message...", modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp), color = MaterialTheme.colorScheme.primary, fontSize = 12.sp)
+                } else if (chatModerationStatus is ModerationState.Blocked) {
+                    Text("Blocked: ${(chatModerationStatus as ModerationState.Blocked).reason}", modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp), color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
                 }
 
                 // Chat Input Panel
@@ -2825,12 +2832,6 @@ fun SettingsScreen(viewModel: MainViewModel) {
         )
         
         Spacer(modifier = Modifier.height(8.dp))
-
-        SecurityPolicyRow(
-            icon = Icons.Default.Block,
-            title = "Screenshot Prevention Active",
-            desc = "Android native FLAG_SECURE prevents screen grabs, streaming, or video recordings of this interface."
-        )
 
         SecurityPolicyRow(
             icon = Icons.Default.EnhancedEncryption,

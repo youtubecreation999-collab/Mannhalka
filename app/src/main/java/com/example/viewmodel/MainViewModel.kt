@@ -151,6 +151,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val postText = MutableStateFlow("")
     val postSelectedTag = MutableStateFlow("Venting")
     val moderationStatus = MutableStateFlow<ModerationState>(ModerationState.Idle)
+    val chatModerationStatus = MutableStateFlow<ModerationState>(ModerationState.Idle)
 
     // Encryption View Overlays Map (messageId -> showEncryptedState)
     val expandedMessageEncryptionState = MutableStateFlow<Map<Long, Boolean>>(emptyMap())
@@ -481,16 +482,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch {
             // Apply Content Moderation before sending
+            chatModerationStatus.value = ModerationState.Analyzing
             val moderationResult = GeminiModerator.moderateContent(cleartext)
             if (moderationResult.isSafe) {
+                chatModerationStatus.value = ModerationState.Approved("Message sent.")
                 repository.sendSecureMessage(
                     chatId = chatId,
                     senderName = userPseudonym.value,
                     cleartext = cleartext
                 )
+                // Reset status after a delay
+                kotlinx.coroutines.delay(2000)
+                chatModerationStatus.value = ModerationState.Idle
             } else {
-                // Handle unsafe content (maybe show a toast or error in UI)
-                // For now, silently drop it or add a state for it
+                chatModerationStatus.value = ModerationState.Blocked(moderationResult.flagReason)
             }
         }
     }
