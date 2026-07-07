@@ -1,38 +1,32 @@
 package com.example.ui.theme
 
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
-
-private val NaturalTonesColorScheme = lightColorScheme(
-    primary = SageGreen,
-    onPrimary = CleanWhite,
-    secondary = EarthBrown,
-    onSecondary = CleanWhite,
-    background = CreamWhite,
-    onBackground = DeepCharcoal,
-    surface = CleanWhite,
-    onSurface = DeepCharcoal,
-    surfaceVariant = WarmSand,
-    onSurfaceVariant = EarthBrown,
-    error = ErrorRed,
-    outline = SoftSandBorder,
-    outlineVariant = MutedSageText
-)
 
 @Composable
 fun MyApplicationTheme(
-  darkTheme: Boolean = false, // Respect Natural Tones soft light theme as primary
-  dynamicColor: Boolean = false, // Enforce brand identity consistently
+  themeId: String = "whatsapp_classic",
   content: @Composable () -> Unit,
 ) {
-  val colorScheme = NaturalTonesColorScheme
+  val palette = ThemePalettes.find { it.id == themeId } ?: ThemePalettes[0]
+  val colorScheme = lightColorScheme(
+      primary = palette.primary,
+      onPrimary = CleanWhite,
+      secondary = palette.secondary,
+      onSecondary = CleanWhite,
+      background = palette.background,
+      onBackground = DeepCharcoal,
+      surface = CleanWhite,
+      onSurface = DeepCharcoal,
+      surfaceVariant = palette.background,
+      onSurfaceVariant = DeepCharcoal,
+      primaryContainer = palette.chatBubbleOut,
+      onPrimaryContainer = DeepCharcoal,
+      error = ErrorRed,
+      outline = TextGray,
+      outlineVariant = TextGray
+  )
 
   MaterialTheme(colorScheme = colorScheme, typography = Typography, content = content)
 }

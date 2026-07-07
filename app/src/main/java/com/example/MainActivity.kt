@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.MainAppContainer
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import com.example.ui.theme.MyApplicationTheme
 import com.example.viewmodel.MainViewModel
 
@@ -27,8 +29,10 @@ class MainActivity : FragmentActivity() {
     window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
     
     setContent {
-      MyApplicationTheme {
-        viewModel = viewModel()
+      val mainViewModel: MainViewModel = viewModel()
+      viewModel = mainViewModel
+      val selectedThemeId by mainViewModel.selectedThemeId.collectAsState()
+      MyApplicationTheme(themeId = selectedThemeId) {
         androidx.compose.runtime.CompositionLocalProvider(
           androidx.compose.ui.platform.LocalTextToolbar provides com.example.ui.EmptyTextToolbar()
         ) {

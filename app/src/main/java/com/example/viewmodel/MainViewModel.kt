@@ -190,6 +190,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // TTL Setting
     val messageTtl = MutableStateFlow<Long?>(null) // null means no self-destruct
 
+    // Dynamic Theme Setting
+    val selectedThemeId = MutableStateFlow("whatsapp_classic")
+
     init {
         viewModelScope.launch {
             // Load mobile number
@@ -236,6 +239,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             // Load TTL setting
             val ttlStr = repository.getSetting("message_ttl")
             messageTtl.value = ttlStr?.toLongOrNull()
+
+            // Load theme setting
+            val themeStr = repository.getSetting("selected_theme_id")
+            selectedThemeId.value = if (themeStr.isNullOrEmpty()) "whatsapp_classic" else themeStr
             
             // Clean up expired messages on startup
             repository.cleanupExpiredMessages()
@@ -246,6 +253,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             messageTtl.value = ttlMillis
             repository.saveSetting("message_ttl", ttlMillis?.toString() ?: "")
+        }
+    }
+
+    fun setSelectedThemeId(themeId: String) {
+        viewModelScope.launch {
+            selectedThemeId.value = themeId
+            repository.saveSetting("selected_theme_id", themeId)
         }
     }
 
@@ -433,7 +447,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val result = GeminiModerator.moderateContent(content)
             
             if (result.isSafe) {
-                moderationStatus.value = ModerationState.Approved("Content is safe and secure. Posted anonymously!")
+                moderationStatus.value = ModerationState.Approved("Content is safe and secure. Posted successfully!")
                 
                 // Insert post into Room
                 repository.insertFeelingPost(
@@ -477,7 +491,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         chatId = chatId,
                         participantName = post.authorName,
                         participantAvatarColor = post.authorAvatarColor,
-                        lastMessage = "Connected anonymously regarding: \"${post.content.take(30)}...\"",
+                        lastMessage = "Connected regarding: \"${post.content.take(30)}...\"",
                         lastMessageTimestamp = System.currentTimeMillis()
                     )
                 )

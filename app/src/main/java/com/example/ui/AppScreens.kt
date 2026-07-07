@@ -46,7 +46,9 @@ import com.example.viewmodel.MainViewModel
 import com.example.viewmodel.Screen
 import com.example.viewmodel.ModerationState
 import com.example.R
+import com.example.ui.theme.*
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.layout.ContentScale
 
 import androidx.compose.foundation.text.KeyboardOptions
@@ -738,70 +740,80 @@ fun MainAppContainer(viewModel: MainViewModel) {
 
 @Composable
 fun AppHeader() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .windowInsetsPadding(WindowInsets.statusBars),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+    Surface(
+        color = MaterialTheme.colorScheme.primary,
+        tonalElevation = 4.dp
     ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .windowInsetsPadding(WindowInsets.statusBars),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
-                contentAlignment = Alignment.Center
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Fingerprint,
-                    contentDescription = "Identity fingerprint",
-                    tint = Color.White,
-                    modifier = Modifier.size(22.dp)
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = "WhatsApp Secure",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Text(
+                    text = "MANNHALKA",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
+                    color = Color.White
                 )
             }
-            Text(
-                text = "MANNHALKA",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-        }
-        
-        IconButton(
-            onClick = { /* No action needed */ },
-            modifier = Modifier.size(40.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Security,
-                contentDescription = "Shield Lock",
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
-            )
-        }
+            
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                IconButton(
+                    onClick = { /* No action needed */ },
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Security,
+                        contentDescription = "Shield Lock",
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
 
-        val context = LocalContext.current
-        var showDonationDialog by remember { mutableStateOf(false) }
+                val context = LocalContext.current
+                var showDonationDialog by remember { mutableStateOf(false) }
 
-        if (showDonationDialog) {
-            DonationDialog(onDismiss = { showDonationDialog = false })
-        }
+                if (showDonationDialog) {
+                    DonationDialog(onDismiss = { showDonationDialog = false })
+                }
 
-        IconButton(
-            onClick = { showDonationDialog = true },
-            modifier = Modifier.size(40.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Favorite,
-                contentDescription = "Donate",
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
-            )
+                IconButton(
+                    onClick = { showDonationDialog = true },
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Favorite,
+                        contentDescription = "Donate",
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
         }
     }
 }
@@ -865,13 +877,13 @@ fun PrivacyBanner() {
             .padding(horizontal = 16.dp, vertical = 4.dp)
             .border(
                 width = 1.dp,
-                color = Color(0xFFD7CDBB),
-                shape = RoundedCornerShape(16.dp)
+                color = Color(0xFFFFE082),
+                shape = RoundedCornerShape(12.dp)
             ),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFE7E0D1)
+            containerColor = Color(0xFFFEF9E7)
         ),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(12.dp)
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -879,17 +891,17 @@ fun PrivacyBanner() {
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Icon(
-                imageVector = Icons.Default.VisibilityOff,
-                contentDescription = "Visibility Off",
-                tint = Color(0xFF6F5D3E),
-                modifier = Modifier.size(20.dp)
+                imageVector = Icons.Default.Lock,
+                contentDescription = "E2E Encryption",
+                tint = Color(0xFF6B511F),
+                modifier = Modifier.size(18.dp)
             )
             Text(
-                text = "Anonymous environment active. Screenshot & download features are globally disabled for your safety.",
+                text = "Messages and posts are end-to-end encrypted. No one outside of this app can read them.",
                 fontSize = 11.sp,
                 lineHeight = 15.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color(0xFF6F5D3E)
+                color = Color(0xFF6B511F)
             )
         }
     }
@@ -977,9 +989,6 @@ fun AppShell(
         ) {
             // Global Beautiful Natural Tones Header
             AppHeader()
-            
-            // Global Beautiful Privacy Banner
-            PrivacyBanner()
             
             Box(
                 modifier = Modifier
@@ -1481,6 +1490,7 @@ fun FeedScreen(viewModel: MainViewModel) {
     val posts by viewModel.filteredFeelingPosts.collectAsState()
     val activeFilter by viewModel.selectedTagFilter.collectAsState()
     val userNickname by viewModel.userPseudonym.collectAsState()
+    var selectedStatusForViewer by remember { mutableStateOf<FeelingPost?>(null) }
 
     val emotionTags = listOf("All", "Anxiety", "Sadness", "Isolation", "Venting", "Hope", "Peace")
 
@@ -1510,15 +1520,15 @@ fun FeedScreen(viewModel: MainViewModel) {
                 )
             }
             
-            IconButton(
-                onClick = { viewModel.regenerateProfile() },
+            Box(
                 modifier = Modifier
-                    .background(MaterialTheme.colorScheme.surface, CircleShape)
-                    .size(40.dp)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape)
+                    .size(40.dp),
+                contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = "Regenerate Alias",
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = "Identity Locked",
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp)
                 )
@@ -1558,9 +1568,338 @@ fun FeedScreen(viewModel: MainViewModel) {
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // WhatsApp Status Tray (Big Space to see Status & WhatsApp visual styling)
+        Text(
+            text = "STATUS UPDATES",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+            letterSpacing = 1.sp,
+            modifier = Modifier.padding(bottom = 6.dp)
+        )
+        
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp)
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // My Status Item
+            val myLatestPost = posts.firstOrNull { it.authorName == userNickname }
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .clickable {
+                        if (myLatestPost != null) {
+                            selectedStatusForViewer = myLatestPost
+                        } else {
+                            viewModel.currentScreen.value = Screen.Share
+                        }
+                    }
+                    .padding(vertical = 2.dp)
+            ) {
+                Box(
+                    modifier = Modifier.size(60.dp),
+                    contentAlignment = Alignment.BottomEnd
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .border(
+                                width = 2.dp,
+                                color = if (myLatestPost != null) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                shape = CircleShape
+                            )
+                            .padding(3.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = userNickname.take(2).uppercase(),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                    
+                    if (myLatestPost == null) {
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary)
+                                .border(1.5.dp, MaterialTheme.colorScheme.surface, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Add Status",
+                                tint = Color.White,
+                                modifier = Modifier.size(12.dp)
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "My Status",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.width(60.dp),
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            // Other Users' Statuses
+            val otherUsersPosts = posts.filter { it.authorName != userNickname }.distinctBy { it.authorName }
+            otherUsersPosts.forEach { post ->
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .clickable { selectedStatusForViewer = post }
+                        .padding(vertical = 2.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(60.dp)
+                            .border(2.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                            .padding(3.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                                .background(Color(post.authorAvatarColor)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = post.authorName.split(" ").map { it.take(1) }.joinToString(""),
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = post.authorName,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.width(64.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Immersive Status Viewer Dialog
+        selectedStatusForViewer?.let { status ->
+            val colors = listOf(
+                Color(0xFF00796B), // Teal
+                Color(0xFF5E35B1), // Deep Purple
+                Color(0xFFD81B60), // Pink
+                Color(0xFFE64A19), // Orange
+                Color(0xFF1E88E5), // Blue
+                Color(0xFF43A047), // Green
+                Color(0xFF8E24AA)  // Purple
+            )
+            val index = java.lang.Math.abs(status.authorName.hashCode()) % colors.size
+            val statusBgColor = colors[index]
+
+            androidx.compose.ui.window.Dialog(
+                onDismissRequest = { selectedStatusForViewer = null },
+                properties = androidx.compose.ui.window.DialogProperties(
+                    usePlatformDefaultWidth = false
+                )
+            ) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = statusBgColor
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .windowInsetsPadding(WindowInsets.statusBars)
+                            .padding(16.dp)
+                    ) {
+                        // Top Story Progress Indicators
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(3.dp)
+                                    .clip(RoundedCornerShape(2.dp))
+                                    .background(Color.White)
+                            )
+                        }
+
+                        // Header: Avatar, Name, and Close
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.White.copy(alpha = 0.2f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = status.authorName.split(" ").map { it.take(1) }.joinToString(""),
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(
+                                        text = status.authorName,
+                                        color = Color.White,
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = status.emotionTag,
+                                        color = Color.White.copy(alpha = 0.7f),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+
+                            IconButton(
+                                onClick = { selectedStatusForViewer = null }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Close Status",
+                                    tint = Color.White
+                                )
+                            }
+                        }
+
+                        // Centered Status Content - BIG SPACE TO SEE STATUS
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Waves,
+                                    contentDescription = "Wave",
+                                    tint = Color.White.copy(alpha = 0.3f),
+                                    modifier = Modifier.size(48.dp)
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    text = status.content,
+                                    color = Color.White,
+                                    fontSize = 24.sp,
+                                    lineHeight = 34.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                Spacer(modifier = Modifier.height(24.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(20.dp))
+                                        .background(Color.White.copy(alpha = 0.15f))
+                                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                                ) {
+                                    Text(
+                                        text = status.emotionTag.uppercase(),
+                                        color = Color.White,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        letterSpacing = 1.sp
+                                    )
+                                }
+                            }
+                        }
+
+                        // Footer: Reply Action
+                        if (status.authorName != userNickname) {
+                            Button(
+                                onClick = {
+                                    viewModel.startAnonymousChat(status)
+                                    selectedStatusForViewer = null
+                                },
+                                shape = RoundedCornerShape(24.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color.White,
+                                    contentColor = statusBgColor
+                                ),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 16.dp)
+                                    .height(48.dp)
+                            ) {
+                                Icon(Icons.Default.Forum, contentDescription = "Connect")
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Reply to Secure Status", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            }
+                        } else {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 16.dp),
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = "Your Status • Tap close to exit",
+                                    color = Color.White.copy(alpha = 0.6f),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         // Post listing
+
         if (posts.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -1739,7 +2078,7 @@ fun ShareScreen(viewModel: MainViewModel) {
             color = MaterialTheme.colorScheme.onBackground
         )
         Text(
-            text = "Release what weighs heavy on your soul. Completely anonymously, fully secure, and zero screenshot footprint.",
+            text = "Release what weighs heavy on your soul. Fully secure, encrypted, and zero screenshot footprint.",
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp, bottom = 18.dp)
@@ -1929,7 +2268,7 @@ fun ShareScreen(viewModel: MainViewModel) {
             Icon(Icons.Default.VerifiedUser, contentDescription = "Post Shield")
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Scan & Post Anonymously",
+                text = "Scan & Post Securely",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.ExtraBold
             )
@@ -2304,7 +2643,7 @@ fun ChatRoomScreen(viewModel: MainViewModel, chatId: String) {
                             ) {
                                 // Sender label
                                 Text(
-                                    text = if (isMyMsg) "You (Anonymous)" else msg.senderName,
+                                    text = if (isMyMsg) "You" else msg.senderName,
                                     fontSize = 10.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(bottom = 2.dp, start = 4.dp, end = 4.dp)
@@ -2323,12 +2662,12 @@ fun ChatRoomScreen(viewModel: MainViewModel, chatId: String) {
                                         )
                                         .clickable { viewModel.toggleMessageEncryptionDetails(msg.id) }
                                         .background(
-                                            if (isMyMsg) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                            if (isMyMsg) MaterialTheme.colorScheme.primaryContainer
                                             else MaterialTheme.colorScheme.surface
                                         )
                                         .border(
                                             width = 1.dp,
-                                            color = if (isMyMsg) MaterialTheme.colorScheme.primary.copy(alpha = 0.4f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
+                                            color = if (isMyMsg) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else Color.Transparent,
                                             shape = RoundedCornerShape(
                                                 topStart = 16.dp,
                                                 topEnd = 16.dp,
@@ -2665,6 +3004,69 @@ fun SettingsScreen(viewModel: MainViewModel) {
             }
         }
 
+        val selectedThemeId by viewModel.selectedThemeId.collectAsState()
+
+        // WhatsApp-inspired Color Palette (20+ Themes Selector)
+        Text(
+            text = "WhatsApp Theme Color (20+ Palettes)",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(top = 20.dp, bottom = 8.dp)
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            com.example.ui.theme.ThemePalettes.forEach { palette ->
+                val isSelected = selectedThemeId == palette.id
+                Surface(
+                    onClick = { viewModel.setSelectedThemeId(palette.id) },
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface,
+                    modifier = Modifier
+                        .padding(vertical = 4.dp, horizontal = 2.dp)
+                        .border(
+                            width = if (isSelected) 2.dp else 1.dp,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Colored double circle
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(CircleShape)
+                                .background(palette.primary),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(12.dp)
+                                    .clip(CircleShape)
+                                    .background(palette.background)
+                            )
+                        }
+                        Text(
+                            text = palette.name,
+                            fontSize = 13.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
         // Identity Card
         Card(
             modifier = Modifier
@@ -2679,7 +3081,7 @@ fun SettingsScreen(viewModel: MainViewModel) {
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "Current Anonymous Signature",
+                    text = "Your Profile Identity",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.primary
@@ -2723,18 +3125,27 @@ fun SettingsScreen(viewModel: MainViewModel) {
                     }
                 }
 
-                Button(
-                    onClick = { viewModel.regenerateProfile() },
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                        contentColor = MaterialTheme.colorScheme.primary
-                    ),
-                    modifier = Modifier.fillMaxWidth()
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    Icon(Icons.Default.Refresh, contentDescription = "Regen")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Regenerate Signature Alias", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = "Profile Locked",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Profile identity is locked for security",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
         }
@@ -3253,7 +3664,7 @@ fun ProfileSetupScreen(viewModel: MainViewModel) {
                                 color = Color.White
                             )
                             Text(
-                                text = "Select a raw pseudonym identifier for your anonymous space. This can be randomized.",
+                                text = "Select a profile username for your secure space. This can be customized.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center,
@@ -3781,7 +4192,7 @@ fun ProfileSetupScreen(viewModel: MainViewModel) {
                                 color = Color.White
                             )
                             Text(
-                                text = "All parameters compiled. Your decentralized E2EE anonymous account is fully ready.",
+                                text = "Your end-to-end encrypted profile is fully configured and ready.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center,
