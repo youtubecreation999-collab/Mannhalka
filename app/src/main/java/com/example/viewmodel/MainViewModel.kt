@@ -191,7 +191,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val messageTtl = MutableStateFlow<Long?>(null) // null means no self-destruct
 
     // Dynamic Theme Setting
-    val selectedThemeId = MutableStateFlow("whatsapp_classic")
+    val selectedThemeId = MutableStateFlow("mannhalka_classic")
 
     init {
         viewModelScope.launch {
@@ -242,7 +242,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
             // Load theme setting
             val themeStr = repository.getSetting("selected_theme_id")
-            selectedThemeId.value = if (themeStr.isNullOrEmpty()) "whatsapp_classic" else themeStr
+            selectedThemeId.value = if (themeStr.isNullOrEmpty()) "mannhalka_classic" else themeStr
             
             // Clean up expired messages on startup
             repository.cleanupExpiredMessages()
@@ -549,9 +549,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         sharedSecret.value = MockEncryptionEngine.generateSharedSecret(peerKey)
     }
 
-    fun wipeHistory() {
+    fun clearAllData() {
         viewModelScope.launch {
-            repository.deleteAllMessages()
+            repository.clearAllData()
         }
     }
 

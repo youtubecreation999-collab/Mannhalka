@@ -765,7 +765,7 @@ fun AppHeader() {
                 ) {
                     Icon(
                         imageVector = Icons.Default.Lock,
-                        contentDescription = "WhatsApp Secure",
+                        contentDescription = "Mannhalka Secure",
                         tint = Color.White,
                         modifier = Modifier.size(20.dp)
                     )
@@ -1570,7 +1570,7 @@ fun FeedScreen(viewModel: MainViewModel) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // WhatsApp Status Tray (Big Space to see Status & WhatsApp visual styling)
+        // Mannhalka Status Tray (Big Space to see Status & Mannhalka visual styling)
         Text(
             text = "STATUS UPDATES",
             fontSize = 11.sp,
@@ -2573,6 +2573,11 @@ fun ChatRoomScreen(viewModel: MainViewModel, chatId: String) {
                                 }
                             }
                             
+                            
+                            IconButton(onClick = { /* Handle call */ }) {
+                                Icon(Icons.Default.Call, contentDescription = "Audio Call", tint = MaterialTheme.colorScheme.primary)
+                            }
+                            
                             Icon(
                                 imageVector = Icons.Default.EnhancedEncryption,
                                 contentDescription = "Encrypted Connection Verified",
@@ -3006,9 +3011,9 @@ fun SettingsScreen(viewModel: MainViewModel) {
 
         val selectedThemeId by viewModel.selectedThemeId.collectAsState()
 
-        // WhatsApp-inspired Color Palette (20+ Themes Selector)
+        // Mannhalka-inspired Color Palette (20+ Themes Selector)
         Text(
-            text = "WhatsApp Theme Color (20+ Palettes)",
+            text = "Mannhalka Theme Color (20+ Palettes)",
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -3341,7 +3346,7 @@ fun SettingsScreen(viewModel: MainViewModel) {
 
         // Wipe Messages Option
         Button(
-            onClick = { viewModel.wipeHistory() },
+            onClick = { viewModel.clearAllData() },
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),

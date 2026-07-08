@@ -16,6 +16,9 @@ interface FeelingPostDao {
 
     @Query("DELETE FROM feeling_posts WHERE id = :id")
     suspend fun deleteFeelingPost(id: Long)
+
+    @Query("DELETE FROM feeling_posts")
+    suspend fun deleteAllFeelingPosts()
 }
 
 @Dao
@@ -31,6 +34,9 @@ interface ChatRoomDao {
 
     @Query("SELECT * FROM chat_rooms WHERE chatId = :chatId LIMIT 1")
     suspend fun getChatRoomById(chatId: String): ChatRoom?
+
+    @Query("DELETE FROM chat_rooms")
+    suspend fun deleteAllChatRooms()
 }
 
 @Dao
@@ -64,4 +70,7 @@ interface ContactDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertContact(contact: ContactEntity)
+
+    @Query("DELETE FROM contacts")
+    suspend fun deleteAllContacts()
 }

@@ -3,10 +3,10 @@ package com.example.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // Core Static Colors
-val WhatsAppGreen = Color(0xFF075E54)
-val WhatsAppTeal = Color(0xFF128C7E)
-val WhatsAppLightGreen = Color(0xFF25D366)
-val WhatsAppBackground = Color(0xFFECE5DD)
+val MannhalkaGreen = Color(0xFF075E54)
+val MannhalkaTeal = Color(0xFF128C7E)
+val MannhalkaLightGreen = Color(0xFF25D366)
+val MannhalkaBackground = Color(0xFFECE5DD)
 val ChatBubbleOut = Color(0xFFDCF8C6)
 val ChatBubbleIn = Color(0xFFFFFFFF)
 val TextGray = Color(0xFF707070)
@@ -25,10 +25,10 @@ data class ThemePalette(
     val chatBubbleIn: Color = Color(0xFFFFFFFF)
 )
 
-// 21 Predefined Distinctive WhatsApp-style Color Palettes
+// 21 Predefined Distinctive Mannhalka-style Color Palettes
 val ThemePalettes = listOf(
-    ThemePalette("whatsapp_classic", "WhatsApp Classic", Color(0xFF075E54), Color(0xFF128C7E), Color(0xFFECE5DD), Color(0xFFDCF8C6)),
-    ThemePalette("whatsapp_teal", "WhatsApp Teal", Color(0xFF00796B), Color(0xFF009688), Color(0xFFE0F2F1), Color(0xFFB2DFDB)),
+    ThemePalette("mannhalka_classic", "Mannhalka Classic", Color(0xFF075E54), Color(0xFF128C7E), Color(0xFFECE5DD), Color(0xFFDCF8C6)),
+    ThemePalette("mannhalka_teal", "Mannhalka Teal", Color(0xFF00796B), Color(0xFF009688), Color(0xFFE0F2F1), Color(0xFFB2DFDB)),
     ThemePalette("forest_moss", "Forest Moss", Color(0xFF2E5A44), Color(0xFF3F7A5C), Color(0xFFEAF2EE), Color(0xFFC7E2D6)),
     ThemePalette("royal_blue", "Royal Blue", Color(0xFF0F4C81), Color(0xFF1F6CAF), Color(0xFFE8F1F5), Color(0xFFC2D9E8)),
     ThemePalette("midnight_navy", "Midnight Navy", Color(0xFF1A2B4C), Color(0xFF2B4370), Color(0xFFECEFF4), Color(0xFFD3DEF0)),

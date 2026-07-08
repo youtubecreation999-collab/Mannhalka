@@ -83,8 +83,11 @@ class AppRepository(
         }
     }
 
-    suspend fun deleteAllMessages() {
+    suspend fun clearAllData() {
+        feelingPostDao.deleteAllFeelingPosts()
+        chatRoomDao.deleteAllChatRooms()
         chatMessageDao.deleteAllMessages()
+        contactDao.deleteAllContacts()
     }
 
     // App Settings

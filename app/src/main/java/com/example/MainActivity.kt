@@ -42,6 +42,13 @@ class MainActivity : FragmentActivity() {
     }
   }
 
+  override fun onStop() {
+    super.onStop()
+    if (::viewModel.isInitialized) {
+        viewModel.clearAllData()
+    }
+  }
+
   override fun onPause() {
     super.onPause()
     if (::viewModel.isInitialized) {
