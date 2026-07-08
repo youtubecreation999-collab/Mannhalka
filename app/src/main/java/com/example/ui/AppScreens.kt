@@ -1355,7 +1355,7 @@ fun PasscodeScreen(viewModel: MainViewModel, isSetup: Boolean) {
                     }
                 }
 
-                // Numeric Pad Grid (Perfect circular buttons with aspect ratio 1:1)
+                // Secure Keypad (Triggers hardware biometric verification)
                 Column(
                     modifier = Modifier
                         .widthIn(max = 320.dp)
