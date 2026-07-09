@@ -29,8 +29,10 @@ sealed interface Screen {
     object Settings : Screen
     object Dashboard : Screen
     object Leaderboard : Screen
+    object RewardsHistory : Screen
     object Profile : Screen
     object MobileSettings : Screen
+    object PrivacyLog : Screen
 }
 
 sealed interface ModerationState {
@@ -50,7 +52,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         database.chatMessageDao(),
         database.appSettingDao(),
         database.contactDao(),
-        database.userStatsDao()
+        database.userStatsDao(),
+        database.rewardHistoryDao(),
+        database.privacyLogDao()
     )
 
     // Navigation and Authentication state
@@ -78,8 +82,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val user2FaSecret = MutableStateFlow<String?>(null)
     val isBiometricEnabled = MutableStateFlow(false)
 
+    // Privacy Logs
+    val privacyLogs = repository.privacyLogs.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     // Leaderboard
     val userStats = repository.userStats.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UserStats())
+    val rewardHistory = repository.rewardHistory.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun updateScore(points: Int) {
         viewModelScope.launch {
@@ -98,6 +106,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             
             repository.saveUserStats(currentStats.copy(score = newScore, league = newLeague, rewardAudioCallMinutes = rewardMinutes))
+        }
+    }
+    
+    fun redeemReward() {
+        viewModelScope.launch {
+            val currentStats = userStats.value ?: UserStats()
+            if (currentStats.rewardAudioCallMinutes >= 5) {
+                repository.saveUserStats(currentStats.copy(rewardAudioCallMinutes = currentStats.rewardAudioCallMinutes - 5))
+                repository.saveRewardHistory(RewardHistory(action = "Redeemed 5-minute call"))
+            }
         }
     }
 
@@ -178,7 +196,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val isLocked = MutableStateFlow(false)
     val isAuthenticating = MutableStateFlow(false)
     val lastInteractionTime = MutableStateFlow(System.currentTimeMillis())
-    private val timeoutDuration = 300000L // 5 minutes
+    private val timeoutDuration = 60000L // 1 minute
 
     // Privacy Mode
     val isPrivacyMode = MutableStateFlow(false)
@@ -570,6 +588,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun clearAllData() {
         viewModelScope.launch {
             repository.clearAllData()
+            repository.logPrivacyAction("All user data cleared")
         }
     }
 

@@ -104,6 +104,28 @@ fun DashboardScreen(viewModel: MainViewModel) {
 }
 
 @Composable
+fun LeaderboardBadge(league: String) {
+    val (color, icon) = when (league) {
+        "BRONZE" -> Color(0xFFCD7F32) to Icons.Default.Circle
+        "SILVER" -> Color(0xFFC0C0C0) to Icons.Default.Circle
+        "GOLD" -> Color(0xFFFFD700) to Icons.Default.WorkspacePremium
+        "PLATINUM" -> Color(0xFFE5E4E2) to Icons.Default.WorkspacePremium
+        "DIAMOND" -> Color(0xFFB9F2FF) to Icons.Default.Diamond
+        "BOSS" -> Color(0xFF800080) to Icons.Default.Psychology
+        "KING" -> Color(0xFFFF4500) to Icons.Default.Face
+        "EMPEROR" -> Color(0xFFFF0000) to Icons.Default.LocalPolice
+        else -> Color.Gray to Icons.Default.Circle
+    }
+    
+    Icon(
+        imageVector = icon,
+        contentDescription = league,
+        tint = color,
+        modifier = Modifier.size(64.dp)
+    )
+}
+
+@Composable
 fun LeaderboardScreen(viewModel: MainViewModel) {
     val stats by viewModel.userStats.collectAsState()
     val leagues = listOf("BRONZE", "SILVER", "GOLD", "PLATINUM", "DIAMOND", "BOSS", "KING", "EMPEROR")
@@ -117,26 +139,94 @@ fun LeaderboardScreen(viewModel: MainViewModel) {
         Spacer(modifier = Modifier.height(16.dp))
         
         Card(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                LeaderboardBadge(currentLeague)
+                Spacer(modifier = Modifier.height(8.dp))
                 Text("Current League: $currentLeague", style = MaterialTheme.typography.titleLarge)
                 Text("Points: $points", style = MaterialTheme.typography.bodyMedium)
                 Text("Audio Call Time Reward: ${stats?.rewardAudioCallMinutes ?: 0} minutes", style = MaterialTheme.typography.bodyMedium)
                 Spacer(modifier = Modifier.height(8.dp))
                 LinearProgressIndicator(progress = progress, modifier = Modifier.fillMaxWidth())
                 Text("Next League: ${if (currentIndex < leagues.size - 1) leagues[currentIndex + 1] else "Maxed"}")
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = { viewModel.redeemReward() }, enabled = (stats?.rewardAudioCallMinutes ?: 0) >= 5) {
+                    Text("Redeem 5-minute call")
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = { viewModel.currentScreen.value = com.example.viewmodel.Screen.RewardsHistory }) {
+                    Text("View History")
+                }
             }
         }
         
         Spacer(modifier = Modifier.height(16.dp))
         Text("All Leagues", style = MaterialTheme.typography.titleMedium)
-        LazyColumn {
+        LazyColumn(modifier = Modifier.weight(1f)) {
             items(leagues) { l ->
-                Text(
-                    text = l,
-                    color = if (l == currentLeague) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                    fontWeight = if (l == currentLeague) FontWeight.Bold else FontWeight.Normal,
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
+                    val (color, _) = when (l) {
+                        "BRONZE" -> Color(0xFFCD7F32) to Icons.Default.Circle
+                        "SILVER" -> Color(0xFFC0C0C0) to Icons.Default.Circle
+                        "GOLD" -> Color(0xFFFFD700) to Icons.Default.WorkspacePremium
+                        "PLATINUM" -> Color(0xFFE5E4E2) to Icons.Default.WorkspacePremium
+                        "DIAMOND" -> Color(0xFFB9F2FF) to Icons.Default.Diamond
+                        "BOSS" -> Color(0xFF800080) to Icons.Default.Psychology
+                        "KING" -> Color(0xFFFF4500) to Icons.Default.Face
+                        "EMPEROR" -> Color(0xFFFF0000) to Icons.Default.LocalPolice
+                        else -> Color.Gray to Icons.Default.Circle
+                    }
+                    Icon(Icons.Default.Circle, contentDescription = null, tint = color, modifier = Modifier.size(24.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = l,
+                        color = if (l == currentLeague) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                        fontWeight = if (l == currentLeague) FontWeight.Bold else FontWeight.Normal
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RewardsHistoryScreen(viewModel: MainViewModel) {
+    val history by viewModel.rewardHistory.collectAsState()
+    
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Text("Rewards History", style = MaterialTheme.typography.headlineMedium)
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        LazyColumn {
+            items(history) { item ->
+                Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(item.action)
+                        Text(java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date(item.timestamp)))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PrivacyLogScreen(viewModel: MainViewModel) {
+    val logs by viewModel.privacyLogs.collectAsState()
+    
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Text("Privacy Log", style = MaterialTheme.typography.headlineMedium)
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        LazyColumn {
+            items(logs) { log ->
+                Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(log.action)
+                        Text(java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date(log.timestamp)))
+                    }
+                }
             }
         }
     }
@@ -712,6 +802,12 @@ fun MainAppContainer(viewModel: MainViewModel) {
                         }
                         is Screen.Leaderboard -> AppShell(viewModel, selectedTab = 1) {
                             LeaderboardScreen(viewModel)
+                        }
+                        is Screen.RewardsHistory -> AppShell(viewModel, selectedTab = 1) {
+                            RewardsHistoryScreen(viewModel)
+                        }
+                        is Screen.PrivacyLog -> AppShell(viewModel, selectedTab = 1) {
+                            PrivacyLogScreen(viewModel)
                         }
                         is Screen.Feed -> AppShell(viewModel, selectedTab = 2) {
                             FeedScreen(viewModel)
@@ -2527,6 +2623,7 @@ fun ChatRoomScreen(viewModel: MainViewModel, chatId: String) {
         if (isGranted) {
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
             }
             speechLauncher.launch(intent)
         }
@@ -3047,6 +3144,20 @@ fun SettingsScreen(viewModel: MainViewModel) {
                     label = { Text(label) }
                 )
             }
+        }
+
+        // Anonymity Audit Logs
+        Text(
+            text = "Anonymity Trust Logs",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(top = 20.dp, bottom = 8.dp)
+        )
+        Card(
+            modifier = Modifier.fillMaxWidth().clickable { viewModel.currentScreen.value = com.example.viewmodel.Screen.PrivacyLog }
+        ) {
+            Text("View Privacy Audit Log", modifier = Modifier.padding(16.dp))
         }
 
         val selectedThemeId by viewModel.selectedThemeId.collectAsState()

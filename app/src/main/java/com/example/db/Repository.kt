@@ -9,8 +9,17 @@ class AppRepository(
     private val chatMessageDao: ChatMessageDao,
     private val appSettingDao: AppSettingDao,
     private val contactDao: ContactDao,
-    private val userStatsDao: UserStatsDao
+    private val userStatsDao: UserStatsDao,
+    private val rewardHistoryDao: RewardHistoryDao,
+    private val privacyLogDao: PrivacyLogDao
 ) {
+    // Privacy Logs
+    val privacyLogs: Flow<List<PrivacyLog>> = privacyLogDao.getPrivacyLogs()
+    
+    suspend fun logPrivacyAction(action: String) {
+        privacyLogDao.insertLog(PrivacyLog(action = action))
+    }
+
     // Feel Posts
     val allFeelingPosts: Flow<List<FeelingPost>> = feelingPostDao.getAllFeelingPosts()
 
@@ -110,4 +119,8 @@ class AppRepository(
     // User Stats
     val userStats = userStatsDao.getUserStats()
     suspend fun saveUserStats(stats: UserStats) = userStatsDao.insertUserStats(stats)
+    
+    // Reward History
+    val rewardHistory = rewardHistoryDao.getRewardHistory()
+    suspend fun saveRewardHistory(rewardHistory: RewardHistory) = rewardHistoryDao.insertRewardHistory(rewardHistory)
 }

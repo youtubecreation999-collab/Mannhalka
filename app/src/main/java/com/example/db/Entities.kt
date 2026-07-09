@@ -53,3 +53,17 @@ data class UserStats(
     val league: String = "BRONZE",
     val rewardAudioCallMinutes: Int = 0
 )
+
+@Entity(tableName = "reward_history")
+data class RewardHistory(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val timestamp: Long = System.currentTimeMillis(),
+    val action: String = "Redeemed 5-minute call"
+)
+
+@Entity(tableName = "privacy_logs")
+data class PrivacyLog(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val timestamp: Long = System.currentTimeMillis(),
+    val action: String
+)

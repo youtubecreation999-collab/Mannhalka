@@ -83,3 +83,21 @@ interface UserStatsDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUserStats(userStats: UserStats)
 }
+
+@Dao
+interface RewardHistoryDao {
+    @Query("SELECT * FROM reward_history ORDER BY timestamp DESC")
+    fun getRewardHistory(): kotlinx.coroutines.flow.Flow<List<RewardHistory>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertRewardHistory(rewardHistory: RewardHistory)
+}
+
+@Dao
+interface PrivacyLogDao {
+    @Query("SELECT * FROM privacy_logs ORDER BY timestamp DESC")
+    fun getPrivacyLogs(): kotlinx.coroutines.flow.Flow<List<PrivacyLog>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLog(log: PrivacyLog)
+}
