@@ -195,6 +195,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // Auto-lock mechanism
     val isLocked = MutableStateFlow(false)
     val isAuthenticating = MutableStateFlow(false)
+    val isChatAuthenticated = MutableStateFlow(false)
     val lastInteractionTime = MutableStateFlow(System.currentTimeMillis())
     private val timeoutDuration = 60000L // 1 minute
 
@@ -225,6 +226,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // TTL Setting
     val messageTtl = MutableStateFlow<Long?>(null) // null means no self-destruct
+    val isBiometricChatEnabled = MutableStateFlow(false)
 
     // Dynamic Theme Setting
     val selectedThemeId = MutableStateFlow("sunset_coral")
@@ -275,6 +277,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             // Load TTL setting
             val ttlStr = repository.getSetting("message_ttl")
             messageTtl.value = ttlStr?.toLongOrNull()
+            
+            val bioChatStr = repository.getSetting("biometric_chat_enabled")
+            isBiometricChatEnabled.value = bioChatStr == "true"
 
             // Load theme setting
             val themeStr = repository.getSetting("selected_theme_id")
@@ -289,6 +294,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             messageTtl.value = ttlMillis
             repository.saveSetting("message_ttl", ttlMillis?.toString() ?: "")
+        }
+    }
+
+    fun setBiometricChatEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            isBiometricChatEnabled.value = enabled
+            repository.saveSetting("biometric_chat_enabled", enabled.toString())
         }
     }
 
@@ -464,10 +476,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun triggerSimulatedBiometricSuccess() {
         viewModelScope.launch {
             isAuthenticated.value = true
+            isChatAuthenticated.value = true
             currentScreen.value = Screen.Feed
             passcodeError.value = null
             passcodeText.value = ""
         }
+    }
+    
+    fun triggerChatAuthenticationSuccess() {
+        isChatAuthenticated.value = true
     }
 
     // Feeling Posting with Gemini Content Moderation

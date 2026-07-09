@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalTextToolbar
 import androidx.compose.ui.platform.TextToolbar
@@ -584,13 +585,14 @@ fun MobileNumberSettingsScreen(viewModel: MainViewModel) {
 }
 
 @Composable
-fun BiometricAuthComponent(viewModel: MainViewModel) {
+fun BiometricAuthComponent(viewModel: MainViewModel, onSuccess: () -> Unit = { viewModel.triggerSimulatedBiometricSuccess() }) {
     val context = LocalContext.current
     val activity = context.findActivity() ?: return
     val isSupported by viewModel.isBiometricSupported.collectAsState()
-
+    val view = LocalView.current
+    
     if (!isSupported) return
-
+    
     Button(
         onClick = {
             BiometricBridge.authenticate(
@@ -599,10 +601,11 @@ fun BiometricAuthComponent(viewModel: MainViewModel) {
                 "Verify your identity",
                 object : BiometricBridge.BiometricPromise {
                     override fun resolve(value: Any?) {
-                        viewModel.triggerSimulatedBiometricSuccess()
+                        view.performHapticFeedback(android.view.HapticFeedbackConstants.CONFIRM)
+                        onSuccess()
                     }
                     override fun reject(code: String, message: String) {
-                        // Handle error (e.g. log or show message)
+                        view.performHapticFeedback(android.view.HapticFeedbackConstants.REJECT)
                     }
                 }
             )
@@ -2600,11 +2603,27 @@ fun ChatRoomScreen(viewModel: MainViewModel, chatId: String) {
     val chatModerationStatus by viewModel.chatModerationStatus.collectAsState()
 
     val isAuthenticated by viewModel.isAuthenticated.collectAsState()
+    val isBiometricChatEnabled by viewModel.isBiometricChatEnabled.collectAsState()
+    val isChatAuthenticated by viewModel.isChatAuthenticated.collectAsState()
+
+    if (isBiometricChatEnabled && !isChatAuthenticated) {
+        Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.Center) {
+            Text("Biometric Authentication Required", style = MaterialTheme.typography.headlineMedium)
+            Spacer(modifier = Modifier.height(16.dp))
+            BiometricAuthComponent(viewModel, onSuccess = { viewModel.triggerChatAuthenticationSuccess() })
+        }
+        return
+    }
 
     var textInput by remember { mutableStateOf("") }
     val context = LocalContext.current
     val voiceManager = remember { VoiceManager(context) {} }
-    DisposableEffect(Unit) { onDispose { voiceManager.shutdown() } }
+    DisposableEffect(Unit) {
+        onDispose {
+            voiceManager.shutdown()
+            viewModel.isChatAuthenticated.value = false
+        }
+    }
 
     val speechLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -3144,6 +3163,16 @@ fun SettingsScreen(viewModel: MainViewModel) {
                     label = { Text(label) }
                 )
             }
+        }
+        
+        val isBiometricChatEnabled by viewModel.isBiometricChatEnabled.collectAsState()
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Require Biometric for Chat", fontWeight = FontWeight.Bold)
+            Switch(checked = isBiometricChatEnabled, onCheckedChange = { viewModel.setBiometricChatEnabled(it) })
         }
 
         // Anonymity Audit Logs
