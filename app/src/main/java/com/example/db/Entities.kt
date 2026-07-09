@@ -45,3 +45,11 @@ data class ContactEntity(
     val name: String,
     val avatarColor: Int
 )
+
+@Entity(tableName = "user_stats")
+data class UserStats(
+    @PrimaryKey val userId: String = "current_user",
+    val score: Long = 0,
+    val league: String = "BRONZE",
+    val rewardAudioCallMinutes: Int = 0
+)

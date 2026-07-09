@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.db.ChatRoom
 import com.example.db.FeelingPost
+import com.example.db.UserStats
 import com.example.security.CryptoHelper
 import com.example.security.BiometricBridge
 import com.example.viewmodel.MainViewModel
@@ -104,34 +105,36 @@ fun DashboardScreen(viewModel: MainViewModel) {
 
 @Composable
 fun LeaderboardScreen(viewModel: MainViewModel) {
-    val points by viewModel.leaderboardPoints.collectAsState()
-    val level by viewModel.leaderboardLevel.collectAsState()
-    val levels = listOf("Bronze", "Silver", "Gold", "Platinum", "Diamond", "Emerald", "Master", "Grandmaster", "Challenger", "Legend")
-    val currentIndex = levels.indexOf(level)
+    val stats by viewModel.userStats.collectAsState()
+    val leagues = listOf("BRONZE", "SILVER", "GOLD", "PLATINUM", "DIAMOND", "BOSS", "KING", "EMPEROR")
+    val currentLeague = stats?.league ?: "BRONZE"
+    val currentIndex = leagues.indexOf(currentLeague)
+    val points = stats?.score ?: 0
     val progress = (points % 100) / 100f
-
+    
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text("Leaderboard", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(16.dp))
         
         Card(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text("Current Tier: $level", style = MaterialTheme.typography.titleLarge)
+                Text("Current League: $currentLeague", style = MaterialTheme.typography.titleLarge)
                 Text("Points: $points", style = MaterialTheme.typography.bodyMedium)
+                Text("Audio Call Time Reward: ${stats?.rewardAudioCallMinutes ?: 0} minutes", style = MaterialTheme.typography.bodyMedium)
                 Spacer(modifier = Modifier.height(8.dp))
                 LinearProgressIndicator(progress = progress, modifier = Modifier.fillMaxWidth())
-                Text("Next Tier: ${if (currentIndex < levels.size - 1) levels[currentIndex + 1] else "Maxed"}")
+                Text("Next League: ${if (currentIndex < leagues.size - 1) leagues[currentIndex + 1] else "Maxed"}")
             }
         }
         
         Spacer(modifier = Modifier.height(16.dp))
-        Text("All Tiers", style = MaterialTheme.typography.titleMedium)
+        Text("All Leagues", style = MaterialTheme.typography.titleMedium)
         LazyColumn {
-            items(levels) { l ->
+            items(leagues) { l ->
                 Text(
                     text = l,
-                    color = if (l == level) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                    fontWeight = if (l == level) FontWeight.Bold else FontWeight.Normal,
+                    color = if (l == currentLeague) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    fontWeight = if (l == currentLeague) FontWeight.Bold else FontWeight.Normal,
                     modifier = Modifier.padding(vertical = 4.dp)
                 )
             }
@@ -536,8 +539,9 @@ fun ProfileScreen(viewModel: MainViewModel) {
     val pseudonym by viewModel.userPseudonym.collectAsState()
     val avatarColor by viewModel.userAvatarColor.collectAsState()
     val avatarIndex by viewModel.userAvatarIndex.collectAsState()
-    val level by viewModel.leaderboardLevel.collectAsState()
-    val points by viewModel.leaderboardPoints.collectAsState()
+    val stats by viewModel.userStats.collectAsState()
+    val level = stats?.league ?: "BRONZE"
+    val points = stats?.score ?: 0
     
     // Security status
     val isRooted by viewModel.isRooted.collectAsState()

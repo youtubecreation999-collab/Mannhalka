@@ -6,7 +6,7 @@ import androidx.compose.runtime.Composable
 
 @Composable
 fun MyApplicationTheme(
-  themeId: String = "mannhalka_classic",
+  themeId: String = "sunset_coral",
   content: @Composable () -> Unit,
 ) {
   val palette = ThemePalettes.find { it.id == themeId } ?: ThemePalettes[0]

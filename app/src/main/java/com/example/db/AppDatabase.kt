@@ -6,8 +6,8 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [FeelingPost::class, ChatRoom::class, ChatMessage::class, AppSetting::class, ContactEntity::class],
-    version = 2,
+    entities = [FeelingPost::class, ChatRoom::class, ChatMessage::class, AppSetting::class, ContactEntity::class, UserStats::class],
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -16,6 +16,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun chatMessageDao(): ChatMessageDao
     abstract fun appSettingDao(): AppSettingDao
     abstract fun contactDao(): ContactDao
+    abstract fun userStatsDao(): UserStatsDao
 
     companion object {
         @Volatile

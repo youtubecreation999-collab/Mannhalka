@@ -49,7 +49,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         database.chatRoomDao(),
         database.chatMessageDao(),
         database.appSettingDao(),
-        database.contactDao()
+        database.contactDao(),
+        database.userStatsDao()
     )
 
     // Navigation and Authentication state
@@ -78,26 +79,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val isBiometricEnabled = MutableStateFlow(false)
 
     // Leaderboard
-    val leaderboardPoints = MutableStateFlow(0)
-    val leaderboardLevel = MutableStateFlow("Bronze")
-    val messageCount = MutableStateFlow(0) // Added to track messages
+    val userStats = repository.userStats.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UserStats())
 
-    private fun updateLeaderboard(pointsEarned: Int) {
-        leaderboardPoints.value += pointsEarned
-        val levels = listOf("Bronze", "Silver", "Gold", "Platinum", "Diamond", "Emerald", "Master", "Grandmaster", "Challenger", "Legend")
-        val levelIndex = (leaderboardPoints.value / 100).coerceIn(0, levels.size - 1)
-        val oldLevel = leaderboardLevel.value
-        leaderboardLevel.value = levels[levelIndex]
-        
-        if (oldLevel != leaderboardLevel.value) {
-             NotificationHelper.showNotification(getApplication(), "Rank Up!", "Congratulations! You've reached ${leaderboardLevel.value} level!")
-        }
-    }
-    
-    fun onMessageSent() {
-        messageCount.value += 1
-        if (messageCount.value % 5 == 0) {
-            updateLeaderboard(1)
+    fun updateScore(points: Int) {
+        viewModelScope.launch {
+            val currentStats = userStats.value ?: UserStats()
+            val newScore = currentStats.score + points.toLong()
+            val leagues = listOf("BRONZE", "SILVER", "GOLD", "PLATINUM", "DIAMOND", "BOSS", "KING", "EMPEROR")
+            
+            // Simplified progression: every 100 points moves a league
+            val newLeagueIndex = ((newScore / 100).toInt()).coerceIn(0, leagues.size - 1)
+            val newLeague = leagues[newLeagueIndex]
+            
+            var rewardMinutes = currentStats.rewardAudioCallMinutes
+            // Top 3 reward logic simulation (based on score threshold)
+            if (newLeagueIndex > 0 && currentStats.league != newLeague) {
+                rewardMinutes += 5
+            }
+            
+            repository.saveUserStats(currentStats.copy(score = newScore, league = newLeague, rewardAudioCallMinutes = rewardMinutes))
         }
     }
 
@@ -204,7 +204,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val messageTtl = MutableStateFlow<Long?>(null) // null means no self-destruct
 
     // Dynamic Theme Setting
-    val selectedThemeId = MutableStateFlow("mannhalka_classic")
+    val selectedThemeId = MutableStateFlow("sunset_coral")
 
     init {
         viewModelScope.launch {
@@ -255,7 +255,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
             // Load theme setting
             val themeStr = repository.getSetting("selected_theme_id")
-            selectedThemeId.value = if (themeStr.isNullOrEmpty()) "mannhalka_classic" else themeStr
+            selectedThemeId.value = if (themeStr.isNullOrEmpty()) "sunset_coral" else themeStr
             
             // Clean up expired messages on startup
             repository.cleanupExpiredMessages()

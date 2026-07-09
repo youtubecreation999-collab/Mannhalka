@@ -8,7 +8,8 @@ class AppRepository(
     private val chatRoomDao: ChatRoomDao,
     private val chatMessageDao: ChatMessageDao,
     private val appSettingDao: AppSettingDao,
-    private val contactDao: ContactDao
+    private val contactDao: ContactDao,
+    private val userStatsDao: UserStatsDao
 ) {
     // Feel Posts
     val allFeelingPosts: Flow<List<FeelingPost>> = feelingPostDao.getAllFeelingPosts()
@@ -105,4 +106,8 @@ class AppRepository(
     suspend fun insertContact(contact: ContactEntity) {
         contactDao.insertContact(contact)
     }
+
+    // User Stats
+    val userStats = userStatsDao.getUserStats()
+    suspend fun saveUserStats(stats: UserStats) = userStatsDao.insertUserStats(stats)
 }

@@ -74,3 +74,12 @@ interface ContactDao {
     @Query("DELETE FROM contacts")
     suspend fun deleteAllContacts()
 }
+
+@Dao
+interface UserStatsDao {
+    @Query("SELECT * FROM user_stats WHERE userId = 'current_user' LIMIT 1")
+    fun getUserStats(): kotlinx.coroutines.flow.Flow<UserStats?>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertUserStats(userStats: UserStats)
+}
