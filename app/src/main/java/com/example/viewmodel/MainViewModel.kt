@@ -156,6 +156,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // Encryption View Overlays Map (messageId -> showEncryptedState)
     val expandedMessageEncryptionState = MutableStateFlow<Map<Long, Boolean>>(emptyMap())
     
+    // Call state
+    val isCalling = MutableStateFlow(false)
+    private var callJob: kotlinx.coroutines.Job? = null
+
+    fun startCall() {
+        if (isCalling.value) return
+        isCalling.value = true
+        callJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(120_000) // 2 minutes
+            isCalling.value = false
+        }
+    }
+    
     // Auto-lock mechanism
     val isLocked = MutableStateFlow(false)
     val isAuthenticating = MutableStateFlow(false)

@@ -2574,8 +2574,27 @@ fun ChatRoomScreen(viewModel: MainViewModel, chatId: String) {
                             }
                             
                             
-                            IconButton(onClick = { /* Handle call */ }) {
-                                Icon(Icons.Default.Call, contentDescription = "Audio Call", tint = MaterialTheme.colorScheme.primary)
+                            val isCalling by viewModel.isCalling.collectAsState()
+                            
+                            IconButton(onClick = { 
+                                if (!isCalling) {
+                                    viewModel.startCall()
+                                }
+                            }) {
+                                Icon(
+                                    imageVector = if (isCalling) Icons.Default.CallEnd else Icons.Default.Call,
+                                    contentDescription = if (isCalling) "Calling..." else "Audio Call",
+                                    tint = if (isCalling) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            
+                            if (isCalling) {
+                                Text(
+                                    text = "Calling (2m)...",
+                                    color = MaterialTheme.colorScheme.error,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.padding(end = 8.dp)
+                                )
                             }
                             
                             Icon(
