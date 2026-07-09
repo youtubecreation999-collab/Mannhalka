@@ -2475,6 +2475,27 @@ fun SecuredBadge() {
 
 // ---------------- SECURE E2EE CHAT DIALOGUE ROOM SCREEN ----------------
 @Composable
+fun CallTimer(timeRemaining: Long) {
+    val color = when {
+        timeRemaining > 60 -> MaterialTheme.colorScheme.primary
+        timeRemaining > 30 -> MaterialTheme.colorScheme.secondary
+        else -> MaterialTheme.colorScheme.error
+    }
+    
+    val minutes = timeRemaining / 60
+    val seconds = timeRemaining % 60
+    val timeString = "%02d:%02d".format(minutes, seconds)
+    
+    Text(
+        text = "Time: $timeString",
+        color = color,
+        fontWeight = FontWeight.Bold,
+        fontSize = 12.sp,
+        modifier = Modifier.padding(end = 8.dp)
+    )
+}
+
+@Composable
 fun ChatRoomScreen(viewModel: MainViewModel, chatId: String) {
     val messages by viewModel.activeChatMessages.collectAsState()
     val activeRoom by viewModel.activeChatRoom.collectAsState()
@@ -2579,6 +2600,7 @@ fun ChatRoomScreen(viewModel: MainViewModel, chatId: String) {
                             
                             
                             val isCalling by viewModel.isCalling.collectAsState()
+                            val timeRemaining by viewModel.timeRemaining.collectAsState()
                             
                             IconButton(onClick = { 
                                 if (!isCalling) {
@@ -2593,12 +2615,7 @@ fun ChatRoomScreen(viewModel: MainViewModel, chatId: String) {
                             }
                             
                             if (isCalling) {
-                                Text(
-                                    text = "Calling (2m)...",
-                                    color = MaterialTheme.colorScheme.error,
-                                    fontSize = 12.sp,
-                                    modifier = Modifier.padding(end = 8.dp)
-                                )
+                                CallTimer(timeRemaining)
                             }
                             
                             Icon(

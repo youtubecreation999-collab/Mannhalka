@@ -158,13 +158,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     
     // Call state
     val isCalling = MutableStateFlow(false)
+    val timeRemaining = MutableStateFlow(120L) // 2 minutes in seconds
     private var callJob: kotlinx.coroutines.Job? = null
 
     fun startCall() {
         if (isCalling.value) return
         isCalling.value = true
+        timeRemaining.value = 120L
         callJob = viewModelScope.launch {
-            kotlinx.coroutines.delay(120_000) // 2 minutes
+            while (timeRemaining.value > 0) {
+                kotlinx.coroutines.delay(1000)
+                timeRemaining.value -= 1
+            }
             isCalling.value = false
         }
     }
