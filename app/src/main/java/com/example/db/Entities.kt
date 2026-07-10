@@ -67,3 +67,10 @@ data class PrivacyLog(
     val timestamp: Long = System.currentTimeMillis(),
     val action: String
 )
+
+@Entity(tableName = "security_logs")
+data class SecurityLog(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val timestamp: Long = System.currentTimeMillis(),
+    val action: String
+)

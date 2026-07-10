@@ -101,3 +101,12 @@ interface PrivacyLogDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertLog(log: PrivacyLog)
 }
+
+@Dao
+interface SecurityLogDao {
+    @Query("SELECT * FROM security_logs ORDER BY timestamp DESC")
+    fun getSecurityLogs(): kotlinx.coroutines.flow.Flow<List<SecurityLog>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLog(log: SecurityLog)
+}

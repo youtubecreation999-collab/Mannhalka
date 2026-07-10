@@ -11,13 +11,21 @@ class AppRepository(
     private val contactDao: ContactDao,
     private val userStatsDao: UserStatsDao,
     private val rewardHistoryDao: RewardHistoryDao,
-    private val privacyLogDao: PrivacyLogDao
+    private val privacyLogDao: PrivacyLogDao,
+    private val securityLogDao: SecurityLogDao
 ) {
     // Privacy Logs
     val privacyLogs: Flow<List<PrivacyLog>> = privacyLogDao.getPrivacyLogs()
     
     suspend fun logPrivacyAction(action: String) {
         privacyLogDao.insertLog(PrivacyLog(action = action))
+    }
+
+    // Security Logs
+    val securityLogs: Flow<List<SecurityLog>> = securityLogDao.getSecurityLogs()
+    
+    suspend fun logSecurityAction(action: String) {
+        securityLogDao.insertLog(SecurityLog(action = action))
     }
 
     // Feel Posts

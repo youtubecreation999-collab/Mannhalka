@@ -52,6 +52,10 @@ import com.example.ui.theme.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.layout.ContentScale
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 
 import androidx.compose.foundation.text.KeyboardOptions
 import android.app.Activity
@@ -217,7 +221,12 @@ fun PrivacyLogScreen(viewModel: MainViewModel) {
     val logs by viewModel.privacyLogs.collectAsState()
     
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Privacy Log", style = MaterialTheme.typography.headlineMedium)
+        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+            Text("Privacy Log", style = MaterialTheme.typography.headlineMedium)
+            IconButton(onClick = { viewModel.currentScreen.value = com.example.viewmodel.Screen.SecurityAudit }) {
+                Icon(Icons.Default.Security, "Security Audit")
+            }
+        }
         Spacer(modifier = Modifier.height(16.dp))
         
         LazyColumn {
@@ -225,6 +234,27 @@ fun PrivacyLogScreen(viewModel: MainViewModel) {
                 Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
                     Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(log.action)
+                        Text(java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date(log.timestamp)))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SecurityAuditScreen(viewModel: MainViewModel) {
+    val logs by viewModel.securityLogs.collectAsState()
+    
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Text("Security Audit", style = MaterialTheme.typography.headlineMedium)
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        LazyColumn {
+            items(logs) { log ->
+                Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(log.action, color = MaterialTheme.colorScheme.error)
                         Text(java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date(log.timestamp)))
                     }
                 }
@@ -606,6 +636,7 @@ fun BiometricAuthComponent(viewModel: MainViewModel, onSuccess: () -> Unit = { v
                     }
                     override fun reject(code: String, message: String) {
                         view.performHapticFeedback(android.view.HapticFeedbackConstants.REJECT)
+                        viewModel.logSecurityAction("Failed biometric attempt")
                     }
                 }
             )
@@ -739,104 +770,144 @@ fun SecurityOverlay(viewModel: MainViewModel) {
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
+fun ShakeDetector(viewModel: MainViewModel, content: @Composable () -> Unit) {
+    val context = LocalContext.current
+    DisposableEffect(Unit) {
+        val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        val sensorEventListener = object : SensorEventListener {
+            private var lastShakeTime = 0L
+            override fun onSensorChanged(event: SensorEvent?) {
+                event ?: return
+                val x = event.values[0]
+                val y = event.values[1]
+                val z = event.values[2]
+                val gX = x / SensorManager.GRAVITY_EARTH
+                val gY = y / SensorManager.GRAVITY_EARTH
+                val gZ = z / SensorManager.GRAVITY_EARTH
+                val gForce = Math.sqrt((gX * gX + gY * gY + gZ * gZ).toDouble()).toFloat()
+                
+                if (gForce > 2.5f) { // Shake threshold
+                    val now = System.currentTimeMillis()
+                    if (now - lastShakeTime > 1000) { // Limit frequency
+                        lastShakeTime = now
+                        viewModel.lockApp()
+                    }
+                }
+            }
+            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+        }
+        sensorManager.registerListener(sensorEventListener, accelerometer, SensorManager.SENSOR_DELAY_UI)
+        onDispose { sensorManager.unregisterListener(sensorEventListener) }
+    }
+    content()
+}
+
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
 fun MainAppContainer(viewModel: MainViewModel) {
-    val currentScreen by viewModel.currentScreen.collectAsState()
+    ShakeDetector(viewModel) {
+        val currentScreen by viewModel.currentScreen.collectAsState()
 
-    val emptyTextToolbar = remember {
-        object : TextToolbar {
-            override fun showMenu(
-                rect: Rect,
-                onCopyRequested: (() -> Unit)?,
-                onPasteRequested: (() -> Unit)?,
-                onCutRequested: (() -> Unit)?,
-                onSelectAllRequested: (() -> Unit)?
-            ) {
-                // Suppress text selection / copy menu completely
-            }
-            override fun hide() {}
-            override val status: TextToolbarStatus get() = TextToolbarStatus.Hidden
-        }
-    }
-
-    val secureClipboardManager = remember {
-        object : ClipboardManager {
-            override fun setText(annotatedString: AnnotatedString) {
-                // Intercept and prevent clipboard copying
-            }
-            override fun getText(): AnnotatedString? {
-                return null
-            }
-        }
-    }
-
-    CompositionLocalProvider(
-        LocalTextToolbar provides emptyTextToolbar,
-        LocalClipboardManager provides secureClipboardManager
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .pointerInput(Unit) {
-                    awaitPointerEventScope {
-                        while (true) {
-                            awaitPointerEvent()
-                            viewModel.updateInteractionTime()
-                        }
-                    }
+        val emptyTextToolbar = remember {
+            object : TextToolbar {
+                override fun showMenu(
+                    rect: Rect,
+                    onCopyRequested: (() -> Unit)?,
+                    onPasteRequested: (() -> Unit)?,
+                    onCutRequested: (() -> Unit)?,
+                    onSelectAllRequested: (() -> Unit)?
+                ) {
+                    // Suppress text selection / copy menu completely
                 }
+                override fun hide() {}
+                override val status: TextToolbarStatus get() = TextToolbarStatus.Hidden
+            }
+        }
+
+        val secureClipboardManager = remember {
+            object : ClipboardManager {
+                override fun setText(annotatedString: AnnotatedString) {
+                    // Intercept and prevent clipboard copying
+                }
+                override fun getText(): AnnotatedString? {
+                    return null
+                }
+            }
+        }
+
+        CompositionLocalProvider(
+            LocalTextToolbar provides emptyTextToolbar,
+            LocalClipboardManager provides secureClipboardManager
         ) {
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = MaterialTheme.colorScheme.background
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                awaitPointerEvent()
+                                viewModel.updateInteractionTime()
+                            }
+                        }
+                    }
             ) {
-                AnimatedContent(
-                    targetState = currentScreen,
-                    transitionSpec = {
-                        fadeIn() + slideInHorizontally { it } with fadeOut() + slideOutHorizontally { -it }
-                    },
-                    label = "ScreenTransition"
-                ) { screen ->
-                    when (screen) {
-                        is Screen.Auth -> PasscodeScreen(viewModel, isSetup = false)
-                        is Screen.PasscodeSetup -> PasscodeScreen(viewModel, isSetup = true)
-                        is Screen.ProfileSetup -> ProfileSetupScreen(viewModel)
-                        is Screen.Dashboard -> AppShell(viewModel, selectedTab = 0) {
-                            DashboardScreen(viewModel)
-                        }
-                        is Screen.Leaderboard -> AppShell(viewModel, selectedTab = 1) {
-                            LeaderboardScreen(viewModel)
-                        }
-                        is Screen.RewardsHistory -> AppShell(viewModel, selectedTab = 1) {
-                            RewardsHistoryScreen(viewModel)
-                        }
-                        is Screen.PrivacyLog -> AppShell(viewModel, selectedTab = 1) {
-                            PrivacyLogScreen(viewModel)
-                        }
-                        is Screen.Feed -> AppShell(viewModel, selectedTab = 2) {
-                            FeedScreen(viewModel)
-                        }
-                        is Screen.Share -> AppShell(viewModel, selectedTab = 3) {
-                            ShareScreen(viewModel)
-                        }
-                        is Screen.ChatList -> AppShell(viewModel, selectedTab = 4) {
-                            ChatListScreen(viewModel)
-                        }
-                        is Screen.ChatRoomScreen -> ChatRoomScreen(viewModel, screen.chatId)
-                        is Screen.Settings -> AppShell(viewModel, selectedTab = 5) {
-                            SettingsScreen(viewModel)
-                        }
-                        is Screen.Profile -> AppShell(viewModel, selectedTab = 6) {
-                            ProfileScreen(viewModel)
-                        }
-                        is Screen.MobileSettings -> AppShell(viewModel, selectedTab = 7) {
-                            MobileNumberSettingsScreen(viewModel)
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    AnimatedContent(
+                        targetState = currentScreen,
+                        transitionSpec = {
+                            fadeIn() + slideInHorizontally { it } with fadeOut() + slideOutHorizontally { -it }
+                        },
+                        label = "ScreenTransition"
+                    ) { screen ->
+                        when (screen) {
+                            is Screen.Auth -> PasscodeScreen(viewModel, isSetup = false)
+                            is Screen.PasscodeSetup -> PasscodeScreen(viewModel, isSetup = true)
+                            is Screen.ProfileSetup -> ProfileSetupScreen(viewModel)
+                            is Screen.Dashboard -> AppShell(viewModel, selectedTab = 0) {
+                                DashboardScreen(viewModel)
+                            }
+                            is Screen.Leaderboard -> AppShell(viewModel, selectedTab = 1) {
+                                LeaderboardScreen(viewModel)
+                            }
+                            is Screen.RewardsHistory -> AppShell(viewModel, selectedTab = 1) {
+                                RewardsHistoryScreen(viewModel)
+                            }
+                            is Screen.PrivacyLog -> AppShell(viewModel, selectedTab = 1) {
+                                PrivacyLogScreen(viewModel)
+                            }
+                            is Screen.SecurityAudit -> AppShell(viewModel, selectedTab = 1) {
+                                SecurityAuditScreen(viewModel)
+                            }
+                            is Screen.Feed -> AppShell(viewModel, selectedTab = 2) {
+                                FeedScreen(viewModel)
+                            }
+                            is Screen.Share -> AppShell(viewModel, selectedTab = 3) {
+                                ShareScreen(viewModel)
+                            }
+                            is Screen.ChatList -> AppShell(viewModel, selectedTab = 4) {
+                                ChatListScreen(viewModel)
+                            }
+                            is Screen.ChatRoomScreen -> ChatRoomScreen(viewModel, screen.chatId)
+                            is Screen.Settings -> AppShell(viewModel, selectedTab = 5) {
+                                SettingsScreen(viewModel)
+                            }
+                            is Screen.Profile -> AppShell(viewModel, selectedTab = 6) {
+                                ProfileScreen(viewModel)
+                            }
+                            is Screen.MobileSettings -> AppShell(viewModel, selectedTab = 7) {
+                                MobileNumberSettingsScreen(viewModel)
+                            }
                         }
                     }
                 }
-            }
 
-            // Secure, transparent visual security layer overlaid on top of the root layout
-            SecurityOverlay(viewModel)
+                // Secure, transparent visual security layer overlaid on top of the root layout
+                SecurityOverlay(viewModel)
+            }
         }
     }
 }
@@ -1396,9 +1467,9 @@ fun PasscodeScreen(viewModel: MainViewModel, isSetup: Boolean) {
                     ) {
                         val referralCount by viewModel.referralCount.collectAsState()
                         Text(
-                            text = "Referrals: $referralCount / 5\nAgar Apko Is app me aur jada features chaiye to 5 logo ko share kijiye",
-                            fontSize = 12.sp,
-                            textAlign = TextAlign.Center,
+                            text = "Referrals: $referralCount / 5",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
                             modifier = Modifier.weight(1f)
                         )
                         IconButton(onClick = {
@@ -2623,6 +2694,9 @@ fun ChatRoomScreen(viewModel: MainViewModel, chatId: String) {
     val isAuthenticated by viewModel.isAuthenticated.collectAsState()
     val isBiometricChatEnabled by viewModel.isBiometricChatEnabled.collectAsState()
     val isChatAuthenticated by viewModel.isChatAuthenticated.collectAsState()
+    val isPremium by viewModel.isPremium.collectAsState()
+    val isCalling by viewModel.isCalling.collectAsState()
+    val timeRemaining by viewModel.timeRemaining.collectAsState()
 
     if (isBiometricChatEnabled && !isChatAuthenticated) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.Center) {
@@ -2732,10 +2806,6 @@ fun ChatRoomScreen(viewModel: MainViewModel, chatId: String) {
                                 }
                             }
                             
-                            
-                            val isCalling by viewModel.isCalling.collectAsState()
-                            val timeRemaining by viewModel.timeRemaining.collectAsState()
-                            
                             IconButton(onClick = { 
                                 if (!isCalling) {
                                     viewModel.startCall()
@@ -2770,34 +2840,22 @@ fun ChatRoomScreen(viewModel: MainViewModel, chatId: String) {
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-                // E2EE System info banner
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
-                        .padding(vertical = 8.dp, horizontal = 16.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Security,
-                            contentDescription = "Shield Security",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "All dialogues are fully local E2E encrypted. Click any message to view raw ciphertext.",
-                            fontSize = 10.sp,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Medium,
-                            textAlign = TextAlign.Center
+                if (isPremium && isCalling) {
+                    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Call Timer", color = MaterialTheme.colorScheme.onSurface)
+                            Text("%02d:%02d".format(timeRemaining / 60, timeRemaining % 60), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        LinearProgressIndicator(
+                            progress = { timeRemaining.toFloat() / 300f },
+                            modifier = Modifier.fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
+                // E2EE System info banner
+                // Removed to improve styling as per user request.
 
                 // Message Stream
                 if (messages.isEmpty()) {

@@ -47,5 +47,6 @@ val ThemePalettes = listOf(
     ThemePalette("cocoa_brown", "Cocoa Brown", Color(0xFF4E342E), Color(0xFF5D4037), Color(0xFFEFEBE9), Color(0xFFD7CCC8)),
     ThemePalette("sakura_pink", "Sakura Pink", Color(0xFFD81B60), Color(0xFFE91E63), Color(0xFFFCE4EC), Color(0xFFF8BBD0)),
     ThemePalette("cyber_purple", "Cyber Purple", Color(0xFF311B92), Color(0xFF4527A0), Color(0xFFEDE7F6), Color(0xFFD1C4E9)),
-    ThemePalette("mint_fresh", "Mint Fresh", Color(0xFF00897B), Color(0xFF4DB6AC), Color(0xFFE0F2F1), Color(0xFFB2DFDB))
+    ThemePalette("mint_fresh", "Mint Fresh", Color(0xFF00897B), Color(0xFF4DB6AC), Color(0xFFE0F2F1), Color(0xFFB2DFDB)),
+    ThemePalette("midnight_obsidian", "Midnight Obsidian", Color(0xFF2C2C2C), Color(0xFF1A1A1A), Color(0xFF000000), Color(0xFF1A1A1A))
 )

@@ -33,6 +33,7 @@ sealed interface Screen {
     object Profile : Screen
     object MobileSettings : Screen
     object PrivacyLog : Screen
+    object SecurityAudit : Screen
 }
 
 sealed interface ModerationState {
@@ -46,7 +47,7 @@ sealed interface ModerationState {
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val database = AppDatabase.getDatabase(application)
-    private val repository = AppRepository(
+    val repository = AppRepository(
         database.feelingPostDao(),
         database.chatRoomDao(),
         database.chatMessageDao(),
@@ -54,8 +55,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         database.contactDao(),
         database.userStatsDao(),
         database.rewardHistoryDao(),
-        database.privacyLogDao()
+        database.privacyLogDao(),
+        database.securityLogDao()
     )
+
+    fun logSecurityAction(action: String) {
+        viewModelScope.launch {
+            repository.logSecurityAction(action)
+        }
+    }
 
     // Navigation and Authentication state
     val currentScreen = MutableStateFlow<Screen>(Screen.Auth)
@@ -84,6 +92,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // Privacy Logs
     val privacyLogs = repository.privacyLogs.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val securityLogs = repository.securityLogs.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Leaderboard
     val userStats = repository.userStats.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UserStats())
@@ -184,7 +193,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun startCall() {
         if (isCalling.value) return
         isCalling.value = true
-        timeRemaining.value = 120L
+        timeRemaining.value = 300L
         callJob = viewModelScope.launch {
             while (timeRemaining.value > 0) {
                 kotlinx.coroutines.delay(1000)
@@ -507,6 +516,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 passcodeError.value = null
                 passcodeText.value = ""
             } else {
+                repository.logSecurityAction("Failed passcode attempt")
                 passcodeError.value = "Incorrect passcode. Please try again."
                 passcodeText.value = ""
             }
@@ -711,7 +721,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         lastInteractionTime.value = System.currentTimeMillis()
     }
 
-    private fun lockApp() {
+    fun lockApp() {
         isAuthenticated.value = false
         isLocked.value = true
         currentScreen.value = Screen.Auth
