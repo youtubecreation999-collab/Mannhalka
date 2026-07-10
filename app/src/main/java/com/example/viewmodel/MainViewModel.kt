@@ -112,8 +112,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun redeemReward() {
         viewModelScope.launch {
             val currentStats = userStats.value ?: UserStats()
-            if (currentStats.rewardAudioCallMinutes >= 5) {
-                repository.saveUserStats(currentStats.copy(rewardAudioCallMinutes = currentStats.rewardAudioCallMinutes - 5))
+            if (isPremium.value || currentStats.rewardAudioCallMinutes >= 5) {
+                if (!isPremium.value) {
+                    repository.saveUserStats(currentStats.copy(rewardAudioCallMinutes = currentStats.rewardAudioCallMinutes - 5))
+                }
                 repository.saveRewardHistory(RewardHistory(action = "Redeemed 5-minute call"))
             }
         }
@@ -226,6 +228,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // TTL Setting
     val messageTtl = MutableStateFlow<Long?>(null) // null means no self-destruct
+
+    // Premium Status
+    val isPremium = MutableStateFlow(false)
+
     val isBiometricChatEnabled = MutableStateFlow(false)
 
     // Dynamic Theme Setting
@@ -281,6 +287,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val bioChatStr = repository.getSetting("biometric_chat_enabled")
             isBiometricChatEnabled.value = bioChatStr == "true"
 
+            val premiumStr = repository.getSetting("is_premium")
+            isPremium.value = premiumStr == "true"
+
             // Load theme setting
             val themeStr = repository.getSetting("selected_theme_id")
             selectedThemeId.value = if (themeStr.isNullOrEmpty()) "sunset_coral" else themeStr
@@ -301,6 +310,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             isBiometricChatEnabled.value = enabled
             repository.saveSetting("biometric_chat_enabled", enabled.toString())
+        }
+    }
+
+    fun activatePremium() {
+        viewModelScope.launch {
+            isPremium.value = true
+            repository.saveSetting("is_premium", "true")
         }
     }
 

@@ -1390,14 +1390,27 @@ fun PasscodeScreen(viewModel: MainViewModel, isSetup: Boolean) {
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    Text(
-                        text = "MANNHALKA",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontFamily = FontFamily.SansSerif,
-                        letterSpacing = 4.sp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 10.dp)
+                    ) {
+                        Text(
+                            text = "Agar Apko Is app me aur jada features chaiye to 5 logo ko share kijiye",
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(onClick = {
+                            val sendIntent = Intent().apply {
+                                action = Intent.ACTION_SEND
+                                putExtra(Intent.EXTRA_TEXT, "Hey, check out this app!")
+                                type = "text/plain"
+                            }
+                            context.startActivity(Intent.createChooser(sendIntent, null))
+                        }) {
+                            Icon(Icons.Default.Share, contentDescription = "Share")
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
