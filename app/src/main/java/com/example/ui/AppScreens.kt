@@ -1394,8 +1394,9 @@ fun PasscodeScreen(viewModel: MainViewModel, isSetup: Boolean) {
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(top = 10.dp)
                     ) {
+                        val referralCount by viewModel.referralCount.collectAsState()
                         Text(
-                            text = "Agar Apko Is app me aur jada features chaiye to 5 logo ko share kijiye",
+                            text = "Referrals: $referralCount / 5\nAgar Apko Is app me aur jada features chaiye to 5 logo ko share kijiye",
                             fontSize = 12.sp,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.weight(1f)
@@ -1410,6 +1411,10 @@ fun PasscodeScreen(viewModel: MainViewModel, isSetup: Boolean) {
                         }) {
                             Icon(Icons.Default.Share, contentDescription = "Share")
                         }
+                    }
+                    
+                    Button(onClick = { viewModel.simulateReferralAccepted() }) {
+                        Text("Simulate Referral Accepted")
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))

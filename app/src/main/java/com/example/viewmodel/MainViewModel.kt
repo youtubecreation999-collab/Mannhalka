@@ -231,6 +231,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // Premium Status
     val isPremium = MutableStateFlow(false)
+    val referralCount = MutableStateFlow(0)
+    val premiumExpiry = MutableStateFlow(0L)
 
     val isBiometricChatEnabled = MutableStateFlow(false)
 
@@ -289,6 +291,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
             val premiumStr = repository.getSetting("is_premium")
             isPremium.value = premiumStr == "true"
+            
+            val referralCountStr = repository.getSetting("referral_count")
+            referralCount.value = referralCountStr?.toIntOrNull() ?: 0
+            
+            val premiumExpiryStr = repository.getSetting("premium_expiry")
+            premiumExpiry.value = premiumExpiryStr?.toLongOrNull() ?: 0L
 
             // Load theme setting
             val themeStr = repository.getSetting("selected_theme_id")
@@ -317,6 +325,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             isPremium.value = true
             repository.saveSetting("is_premium", "true")
+        }
+    }
+    
+    fun simulateReferralAccepted() {
+        viewModelScope.launch {
+            val newCount = referralCount.value + 1
+            referralCount.value = newCount
+            repository.saveSetting("referral_count", newCount.toString())
+            
+            if (newCount >= 5 && !isPremium.value) {
+                isPremium.value = true
+                repository.saveSetting("is_premium", "true")
+                val expiry = System.currentTimeMillis() + 604800000L
+                premiumExpiry.value = expiry
+                repository.saveSetting("premium_expiry", expiry.toString())
+            }
         }
     }
 
