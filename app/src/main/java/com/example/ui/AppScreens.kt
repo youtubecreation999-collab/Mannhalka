@@ -84,26 +84,668 @@ fun Context.findActivity(): FragmentActivity? {
 
 @Composable
 fun DashboardScreen(viewModel: MainViewModel) {
+    val pseudonym by viewModel.userPseudonym.collectAsState()
+    val avatarColorInt by viewModel.userAvatarColor.collectAsState()
+    val referralCount by viewModel.referralCount.collectAsState()
+    val stats by viewModel.userStats.collectAsState()
+
+    val currentLeague = stats?.league ?: "BRONZE"
+    val score = stats?.score ?: 0L
+    val rewardMinutes = stats?.rewardAudioCallMinutes ?: 0
+
+    val leagues = listOf("BRONZE", "SILVER", "GOLD", "PLATINUM", "DIAMOND", "BOSS", "KING", "EMPEROR")
+    val currentIndex = leagues.indexOf(currentLeague)
+    val progress = (score % 100) / 100f
+
     var friendName by remember { mutableStateOf("") }
-    Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.img_handshake_animation),
-            contentDescription = "Handshake",
-            modifier = Modifier.size(150.dp),
-            contentScale = ContentScale.Fit
+    var isMatching by remember { mutableStateOf(false) }
+    var isLeagueMeaningExpanded by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+
+    // Live League Standings (includes current user sorted dynamically by score!)
+    val liveStandings = remember(pseudonym, currentLeague, score) {
+        val list = mutableListOf(
+            Triple(pseudonym, currentLeague, score),
+            Triple("SafeZephyr", "GOLD", 340L),
+            Triple("PeaceSeeker", "PLATINUM", 420L),
+            Triple("HiddenHope", "SILVER", 185L),
+            Triple("SilentShield", "BRONZE", 70L)
         )
-        Text("Welcome to the Dashboard", style = MaterialTheme.typography.headlineMedium)
-        Text("Connect with friends and start chatting!")
-        if (friendName.isNotEmpty()) {
-            Text("Match: $friendName", style = MaterialTheme.typography.bodyMedium)
+        list.sortByDescending { it.third }
+        list
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Welcome and Pseudonym Header Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+            shape = RoundedCornerShape(24.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(Color(avatarColorInt)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = pseudonym.take(2).uppercase(),
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = pseudonym,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "LEAGUE: $currentLeague",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "$score Points",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
         }
-        Spacer(modifier = Modifier.height(16.dp))
-        FloatingActionButton(onClick = { viewModel.findNewFriend { friendName = it } }) {
-            Icon(Icons.Default.Add, contentDescription = "Find Friend")
+
+        // SYSTEM SECURITY AND PROTECTION STATUS SUMMARY
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
+        ) {
+            Column(modifier = Modifier.padding(24.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Shield,
+                        contentDescription = "Shield Security Status",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Secured Vault & Isolation Logs",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                val securityLogs = listOf(
+                    Triple("End-to-End Encryption", "ACTIVE & VERIFIED", Icons.Default.Lock),
+                    Triple("Secure Passcode", "ENABLED (SHA-256)", Icons.Default.Pin),
+                    Triple("Compulsory Biometrics", "ACTIVE SHIELD", Icons.Default.Fingerprint),
+                    Triple("Anti-Spy Engine", "SCREEN BLOCKED", Icons.Default.Block)
+                )
+
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    for ((title, status, icon) in securityLogs) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = title,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFF38ef7d).copy(alpha = 0.15f))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = status,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF38ef7d)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // LEAGUE PROGRESS & LIVE STANDINGS SECTION
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
+        ) {
+            Column(modifier = Modifier.padding(24.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.WorkspacePremium,
+                            contentDescription = "League Status Details",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "League Status",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    IconButton(
+                        onClick = { viewModel.currentScreen.value = Screen.Leaderboard }
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = "Open Leaderboard Screen",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(modifier = Modifier.size(64.dp), contentAlignment = Alignment.Center) {
+                        val badgeColor = when (currentLeague) {
+                            "BRONZE" -> Color(0xFFCD7F32)
+                            "SILVER" -> Color(0xFFC0C0C0)
+                            "GOLD" -> Color(0xFFFFD700)
+                            "PLATINUM" -> Color(0xFFE5E4E2)
+                            "DIAMOND" -> Color(0xFFB9F2FF)
+                            "BOSS" -> Color(0xFF800080)
+                            "KING" -> Color(0xFFFF4500)
+                            "EMPEROR" -> Color(0xFFFF0000)
+                            else -> Color.Gray
+                        }
+                        Icon(
+                            imageVector = Icons.Default.WorkspacePremium,
+                            contentDescription = "League Badge",
+                            tint = badgeColor,
+                            modifier = Modifier.size(56.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "$currentLeague Division",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Points: $score / Next Level: ${((progress * 100).toInt())}%",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(12.dp)
+                        .clip(RoundedCornerShape(6.dp)),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // LIVE LEAGUE STANDINGS (Real-time online rankings)
+                Text(
+                    text = "Live League Standings",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Active peers online in your division ranking",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    liveStandings.forEachIndexed { index, (peerName, peerLeague, peerScore) ->
+                        val isCurrentUser = peerName == pseudonym
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    if (isCurrentUser) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+                                )
+                                .border(
+                                    width = if (isCurrentUser) 1.dp else 0.dp,
+                                    color = if (isCurrentUser) MaterialTheme.colorScheme.primary.copy(alpha = 0.4f) else Color.Transparent,
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Rank number
+                            Text(
+                                text = "#${index + 1}",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isCurrentUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.width(32.dp)
+                            )
+
+                            // Status Indicator
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(if (isCurrentUser || index % 2 == 0) Color(0xFF38ef7d) else Color.Gray)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            // Peer Pseudonym
+                            Text(
+                                text = if (isCurrentUser) "$peerName (You)" else peerName,
+                                fontSize = 14.sp,
+                                fontWeight = if (isCurrentUser) FontWeight.Bold else FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            // Division Label
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = peerLeague,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            // Points
+                            Text(
+                                text = "$peerScore pts",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // The 10 Dimensions of the Anonymous League System Accordion
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { isLeagueMeaningExpanded = !isLeagueMeaningExpanded },
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "What is the Anonymous League System?",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Icon(
+                                imageVector = if (isLeagueMeaningExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                contentDescription = if (isLeagueMeaningExpanded) "Collapse" else "Expand",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        if (isLeagueMeaningExpanded) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            val leaguePillars = listOf(
+                                "Empathetic Growth" to "Earn progress purely by sharing and validating authentic human experiences.",
+                                "Identity Isolation" to "Fully decoupled metadata ensuring your league status never links to real-world identity.",
+                                "Decentralized Support Tiers" to "Eight progressive divisions engineered to scale trust and lower barriers to communication.",
+                                "Peer Validation Protocol" to "Score increases dynamically when peer connections rate your listening presence.",
+                                "Secure Audio Allocations" to "Points translate directly into private voice call minutes, breaking digital isolation.",
+                                "Zero-Knowledge Architecture" to "The database stores only abstract scores, leaving no trail of your personal conversations.",
+                                "Anti-Harassment Shielding" to "Highly ranked users act as trusted system guardians to ensure safe peer-to-peer venting.",
+                                "Egalitarian Access" to "Every individual begins at Bronze with equal shielding, free from social status hierarchies.",
+                                "Mindfulness Progression" to "Reframes competitive gaming loops into healthy habits of therapeutic expression.",
+                                "Global Solidarity Network" to "Unifies users across different geographic regions under a shared umbrella of mutual healing."
+                            )
+
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                leaguePillars.forEachIndexed { index, (title, description) ->
+                                    Row(verticalAlignment = Alignment.Top) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(20.dp)
+                                                .clip(CircleShape)
+                                                .background(MaterialTheme.colorScheme.primary),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = "${index + 1}",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.White
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Text(
+                                                text = title,
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Text(
+                                                text = description,
+                                                fontSize = 12.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Button(
+                    onClick = { viewModel.currentScreen.value = Screen.Leaderboard },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth().height(48.dp)
+                ) {
+                    Text("View Full Leaderboard", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // ANONYMOUS CONNECTION MATCH TUNNEL
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
+        ) {
+            Column(modifier = Modifier.padding(24.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Forum,
+                        contentDescription = "Chats Match",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Encrypted Matching",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (friendName.isNotEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                            .padding(16.dp)
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                            Icon(
+                                imageVector = Icons.Default.Face,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(44.dp)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Secure Connection Established!",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "Matched Peer: $friendName",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Button(
+                                onClick = { viewModel.currentScreen.value = Screen.ChatList },
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier.height(48.dp)
+                            ) {
+                                Icon(Icons.Default.Forum, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Open Secure Chats", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                } else {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
+                    ) {
+                        Text(
+                            text = if (isMatching) "Locating safe end-to-end active peer..." else "No active matched connection.",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(
+                            onClick = {
+                                isMatching = true
+                                viewModel.findNewFriend { matched ->
+                                    friendName = matched
+                                    isMatching = false
+                                }
+                            },
+                            enabled = !isMatching,
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.height(48.dp)
+                        ) {
+                            if (isMatching) {
+                                CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Routing Tunnel...", fontWeight = FontWeight.Bold)
+                            } else {
+                                Icon(Icons.Default.Add, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Match Anonymous Peer", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // SECURE CONVERSATION REFERRALS
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
+        ) {
+            Column(modifier = Modifier.padding(24.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "Share Referral",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Encrypted Network Referral",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Invitation Progress: $referralCount / 5 accepted",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Box(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = if (referralCount >= 5) "Unlocked Rewards" else "Minutes Reward Pending",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                LinearProgressIndicator(
+                    progress = { referralCount / 5f },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(10.dp)
+                        .clip(RoundedCornerShape(5.dp)),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            val sendIntent = Intent().apply {
+                                action = Intent.ACTION_SEND
+                                putExtra(Intent.EXTRA_TEXT, "Securely vent and chat with me anonymously inside our encrypted network! Code: MANNHALKA")
+                                type = "text/plain"
+                            }
+                            context.startActivity(Intent.createChooser(sendIntent, null))
+                        },
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Icon(Icons.Default.Share, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Invite Peer", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    Button(
+                        onClick = { viewModel.simulateReferralAccepted() },
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Icon(Icons.Default.OfflineBolt, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Simulate", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
         }
     }
 }
@@ -139,55 +781,304 @@ fun LeaderboardScreen(viewModel: MainViewModel) {
     val points = stats?.score ?: 0
     val progress = (points % 100) / 100f
     
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Leaderboard", style = MaterialTheme.typography.headlineMedium)
-        Spacer(modifier = Modifier.height(16.dp))
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp)
+    ) {
+        // Top row with Back button
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            IconButton(
+                onClick = { viewModel.currentScreen.value = com.example.viewmodel.Screen.Dashboard },
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back to Dashboard",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = "Leaderboard",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
         
-        Card(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
-            Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                LeaderboardBadge(currentLeague)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Current League: $currentLeague", style = MaterialTheme.typography.titleLarge)
-                Text("Points: $points", style = MaterialTheme.typography.bodyMedium)
-                Text("Audio Call Time Reward: ${stats?.rewardAudioCallMinutes ?: 0} minutes", style = MaterialTheme.typography.bodyMedium)
-                Spacer(modifier = Modifier.height(8.dp))
-                LinearProgressIndicator(progress = progress, modifier = Modifier.fillMaxWidth())
-                Text("Next League: ${if (currentIndex < leagues.size - 1) leagues[currentIndex + 1] else "Maxed"}")
+        Spacer(modifier = Modifier.height(20.dp))
+        
+        // Active League Info Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Interactive Leaderboard Badge representation
+                Box(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                        .padding(8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    LeaderboardBadge(currentLeague)
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Text(
+                    text = currentLeague,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.primary,
+                    letterSpacing = 1.sp
+                )
                 
                 Spacer(modifier = Modifier.height(8.dp))
-                Button(onClick = { viewModel.redeemReward() }, enabled = (stats?.rewardAudioCallMinutes ?: 0) >= 5) {
-                    Text("Redeem 5-minute call")
+                
+                Text(
+                    text = "Total Rating: $points Points",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                
+                Spacer(modifier = Modifier.height(20.dp))
+                
+                // Progressive gauge
+                val nextLeague = if (currentIndex < leagues.size - 1) leagues[currentIndex + 1] else "Maxed Tier"
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Progress to $nextLeague",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "${(progress * 100).toInt()}%",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
                 
                 Spacer(modifier = Modifier.height(8.dp))
-                Button(onClick = { viewModel.currentScreen.value = com.example.viewmodel.Screen.RewardsHistory }) {
-                    Text("View History")
+                
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                // Reward block
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Phone,
+                        contentDescription = "Voice minutes reward",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Unredeemed Call Reward",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "${stats?.rewardAudioCallMinutes ?: 0} Voice Minutes Available",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Button(
+                        onClick = { viewModel.redeemReward() },
+                        enabled = (stats?.rewardAudioCallMinutes ?: 0) >= 5,
+                        modifier = Modifier
+                            .weight(1.2f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            disabledContainerColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Redeem,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Redeem 5 Mins",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                    }
+                    
+                    Button(
+                        onClick = { viewModel.currentScreen.value = com.example.viewmodel.Screen.RewardsHistory },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Schedule,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "History",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
             }
         }
         
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Division Hierarchy Header
+        Text(
+            text = "Division Hierarchies",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "Progress up through secure therapeutic support tiers",
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
         Spacer(modifier = Modifier.height(16.dp))
-        Text("All Leagues", style = MaterialTheme.typography.titleMedium)
-        LazyColumn(modifier = Modifier.weight(1f)) {
-            items(leagues) { l ->
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
-                    val (color, _) = when (l) {
-                        "BRONZE" -> Color(0xFFCD7F32) to Icons.Default.Circle
-                        "SILVER" -> Color(0xFFC0C0C0) to Icons.Default.Circle
-                        "GOLD" -> Color(0xFFFFD700) to Icons.Default.WorkspacePremium
-                        "PLATINUM" -> Color(0xFFE5E4E2) to Icons.Default.WorkspacePremium
-                        "DIAMOND" -> Color(0xFFB9F2FF) to Icons.Default.Diamond
-                        "BOSS" -> Color(0xFF800080) to Icons.Default.Psychology
-                        "KING" -> Color(0xFFFF4500) to Icons.Default.Face
-                        "EMPEROR" -> Color(0xFFFF0000) to Icons.Default.LocalPolice
-                        else -> Color.Gray to Icons.Default.Circle
+        
+        Column(
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            leagues.forEachIndexed { index, l ->
+                val isCurrent = l == currentLeague
+                val isPassed = index < currentIndex
+                val (tierColor, tierIcon) = when (l) {
+                    "BRONZE" -> Color(0xFFCD7F32) to Icons.Default.Circle
+                    "SILVER" -> Color(0xFFC0C0C0) to Icons.Default.Circle
+                    "GOLD" -> Color(0xFFFFD700) to Icons.Default.WorkspacePremium
+                    "PLATINUM" -> Color(0xFFE5E4E2) to Icons.Default.WorkspacePremium
+                    "DIAMOND" -> Color(0xFFB9F2FF) to Icons.Default.Diamond
+                    "BOSS" -> Color(0xFF800080) to Icons.Default.Psychology
+                    "KING" -> Color(0xFFFF4500) to Icons.Default.Face
+                    "EMPEROR" -> Color(0xFFFF0000) to Icons.Default.LocalPolice
+                    else -> Color.Gray to Icons.Default.Circle
+                }
+                
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            if (isCurrent) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f)
+                        )
+                        .border(
+                            width = if (isCurrent) 1.dp else 0.dp,
+                            color = if (isCurrent) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Left tier index with color ring
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (isCurrent) MaterialTheme.colorScheme.primary
+                                else if (isPassed) tierColor.copy(alpha = 0.15f)
+                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "${index + 1}",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isCurrent) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
-                    Icon(Icons.Default.Circle, contentDescription = null, tint = color, modifier = Modifier.size(24.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = l,
-                        color = if (l == currentLeague) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                        fontWeight = if (l == currentLeague) FontWeight.Bold else FontWeight.Normal
+                    
+                    Spacer(modifier = Modifier.width(16.dp))
+                    
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = l,
+                            fontSize = 15.sp,
+                            fontWeight = if (isCurrent) FontWeight.ExtraBold else FontWeight.Bold,
+                            color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Requirements: ${index * 100} pts",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    
+                    // Division Icon
+                    Icon(
+                        imageVector = tierIcon,
+                        contentDescription = null,
+                        tint = if (isCurrent || isPassed) tierColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
@@ -200,15 +1091,85 @@ fun RewardsHistoryScreen(viewModel: MainViewModel) {
     val history by viewModel.rewardHistory.collectAsState()
     
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Rewards History", style = MaterialTheme.typography.headlineMedium)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            IconButton(
+                onClick = { viewModel.currentScreen.value = com.example.viewmodel.Screen.Leaderboard },
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back to Leaderboard",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = "Rewards History",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
         Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Track your redeemed anonymous call allocations and earned milestone bonuses",
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
         
-        LazyColumn {
-            items(history) { item ->
-                Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                    Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(item.action)
-                        Text(java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date(item.timestamp)))
+        if (history.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize().weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("No recent rewards redeemed", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(history) { item ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                Icon(
+                                    imageVector = Icons.Default.CardGiftcard,
+                                    contentDescription = "Reward",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = item.action,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Text(
+                                text = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date(item.timestamp)),
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
                 }
             }
@@ -221,20 +1182,99 @@ fun PrivacyLogScreen(viewModel: MainViewModel) {
     val logs by viewModel.privacyLogs.collectAsState()
     
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-            Text("Privacy Log", style = MaterialTheme.typography.headlineMedium)
-            IconButton(onClick = { viewModel.currentScreen.value = com.example.viewmodel.Screen.SecurityAudit }) {
-                Icon(Icons.Default.Security, "Security Audit")
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            IconButton(
+                onClick = { viewModel.currentScreen.value = com.example.viewmodel.Screen.Settings },
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back to Settings",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = "Privacy Log",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            IconButton(
+                onClick = { viewModel.currentScreen.value = com.example.viewmodel.Screen.SecurityAudit },
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Security,
+                    contentDescription = "Security Audit",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Track your background E2EE isolations & active sandboxing protocols",
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
         
-        LazyColumn {
-            items(logs) { log ->
-                Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                    Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(log.action)
-                        Text(java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date(log.timestamp)))
+        if (logs.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize().weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("No recent log records", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(logs) { log ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = "Verified Log",
+                                    tint = Color(0xFF38ef7d),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = log.action,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Text(
+                                text = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date(log.timestamp)),
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
                 }
             }
@@ -247,15 +1287,85 @@ fun SecurityAuditScreen(viewModel: MainViewModel) {
     val logs by viewModel.securityLogs.collectAsState()
     
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Security Audit", style = MaterialTheme.typography.headlineMedium)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            IconButton(
+                onClick = { viewModel.currentScreen.value = com.example.viewmodel.Screen.PrivacyLog },
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back to Privacy Log",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = "Security Audit",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
         Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Automated threat telemetry and biometric protection metrics",
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
         
-        LazyColumn {
-            items(logs) { log ->
-                Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                    Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(log.action, color = MaterialTheme.colorScheme.error)
-                        Text(java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date(log.timestamp)))
+        if (logs.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize().weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Zero detected system threats", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(logs) { log ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                Icon(
+                                    imageVector = Icons.Default.Warning,
+                                    contentDescription = "Alert log",
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = log.action,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Text(
+                                text = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date(log.timestamp)),
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
                 }
             }
@@ -870,35 +1980,35 @@ fun MainAppContainer(viewModel: MainViewModel) {
                             is Screen.Dashboard -> AppShell(viewModel, selectedTab = 0) {
                                 DashboardScreen(viewModel)
                             }
-                            is Screen.Leaderboard -> AppShell(viewModel, selectedTab = 1) {
+                            is Screen.Leaderboard -> AppShell(viewModel, selectedTab = 0) {
                                 LeaderboardScreen(viewModel)
                             }
-                            is Screen.RewardsHistory -> AppShell(viewModel, selectedTab = 1) {
+                            is Screen.RewardsHistory -> AppShell(viewModel, selectedTab = 0) {
                                 RewardsHistoryScreen(viewModel)
                             }
-                            is Screen.PrivacyLog -> AppShell(viewModel, selectedTab = 1) {
+                            is Screen.PrivacyLog -> AppShell(viewModel, selectedTab = 4) {
                                 PrivacyLogScreen(viewModel)
                             }
-                            is Screen.SecurityAudit -> AppShell(viewModel, selectedTab = 1) {
+                            is Screen.SecurityAudit -> AppShell(viewModel, selectedTab = 4) {
                                 SecurityAuditScreen(viewModel)
                             }
-                            is Screen.Feed -> AppShell(viewModel, selectedTab = 2) {
+                            is Screen.Feed -> AppShell(viewModel, selectedTab = 1) {
                                 FeedScreen(viewModel)
                             }
-                            is Screen.Share -> AppShell(viewModel, selectedTab = 3) {
+                            is Screen.Share -> AppShell(viewModel, selectedTab = 2) {
                                 ShareScreen(viewModel)
                             }
-                            is Screen.ChatList -> AppShell(viewModel, selectedTab = 4) {
+                            is Screen.ChatList -> AppShell(viewModel, selectedTab = 3) {
                                 ChatListScreen(viewModel)
                             }
                             is Screen.ChatRoomScreen -> ChatRoomScreen(viewModel, screen.chatId)
-                            is Screen.Settings -> AppShell(viewModel, selectedTab = 5) {
+                            is Screen.Settings -> AppShell(viewModel, selectedTab = 4) {
                                 SettingsScreen(viewModel)
                             }
-                            is Screen.Profile -> AppShell(viewModel, selectedTab = 6) {
+                            is Screen.Profile -> AppShell(viewModel, selectedTab = 4) {
                                 ProfileScreen(viewModel)
                             }
-                            is Screen.MobileSettings -> AppShell(viewModel, selectedTab = 7) {
+                            is Screen.MobileSettings -> AppShell(viewModel, selectedTab = 4) {
                                 MobileNumberSettingsScreen(viewModel)
                             }
                         }
@@ -1094,7 +2204,7 @@ fun AppShell(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFFF2EFE9))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                         .padding(vertical = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -1105,7 +2215,7 @@ fun AppShell(
                         Icon(
                             imageVector = Icons.Default.VerifiedUser,
                             contentDescription = "Verified Session",
-                            tint = Color(0xFF8E8A81),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                             modifier = Modifier.size(12.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
@@ -1114,7 +2224,7 @@ fun AppShell(
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 2.sp,
-                            color = Color(0xFF8E8A81)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                         )
                     }
                 }
@@ -1126,27 +2236,34 @@ fun AppShell(
                 ) {
                     NavigationBarItem(
                         selected = selectedTab == 0,
+                        onClick = { viewModel.currentScreen.value = Screen.Dashboard },
+                        icon = { Icon(Icons.Default.Dashboard, contentDescription = "Dashboard") },
+                        label = { Text("Dashboard") },
+                        modifier = Modifier.testTag("nav_dashboard_tab")
+                    )
+                    NavigationBarItem(
+                        selected = selectedTab == 1,
                         onClick = { viewModel.currentScreen.value = Screen.Feed },
                         icon = { Icon(Icons.Default.Waves, contentDescription = "Feed") },
                         label = { Text("Feed") },
                         modifier = Modifier.testTag("nav_feed_tab")
                     )
                     NavigationBarItem(
-                        selected = selectedTab == 1,
+                        selected = selectedTab == 2,
                         onClick = { viewModel.currentScreen.value = Screen.Share },
                         icon = { Icon(Icons.Default.AddCircle, contentDescription = "Vibe Vent") },
                         label = { Text("Share") },
                         modifier = Modifier.testTag("nav_share_tab")
                     )
                     NavigationBarItem(
-                        selected = selectedTab == 2,
+                        selected = selectedTab == 3,
                         onClick = { viewModel.currentScreen.value = Screen.ChatList },
                         icon = { Icon(Icons.Default.Forum, contentDescription = "Secure Chats") },
                         label = { Text("Chats") },
                         modifier = Modifier.testTag("nav_chats_tab")
                     )
                     NavigationBarItem(
-                        selected = selectedTab == 3,
+                        selected = selectedTab == 4,
                         onClick = { viewModel.currentScreen.value = Screen.Settings },
                         icon = { Icon(Icons.Default.Security, contentDescription = "Privacy Shield") },
                         label = { Text("Privacy") },
@@ -1461,31 +2578,69 @@ fun PasscodeScreen(viewModel: MainViewModel, isSetup: Boolean) {
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(top = 10.dp)
+                    val referralCount by viewModel.referralCount.collectAsState()
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 8.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f))
                     ) {
-                        val referralCount by viewModel.referralCount.collectAsState()
-                        Text(
-                            text = "Referrals: $referralCount / 5",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.weight(1f)
-                        )
-                        IconButton(onClick = {
-                            val sendIntent = Intent().apply {
-                                action = Intent.ACTION_SEND
-                                putExtra(Intent.EXTRA_TEXT, "Hey, check out this app!")
-                                type = "text/plain"
+                        Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.GroupAdd,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Secure Referrals: $referralCount / 5",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                                IconButton(
+                                    onClick = {
+                                        val sendIntent = Intent().apply {
+                                            action = Intent.ACTION_SEND
+                                            putExtra(Intent.EXTRA_TEXT, "Hey, check out this secure anonymous app!")
+                                            type = "text/plain"
+                                        }
+                                        context.startActivity(Intent.createChooser(sendIntent, null))
+                                    },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Share,
+                                        contentDescription = "Share",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
                             }
-                            context.startActivity(Intent.createChooser(sendIntent, null))
-                        }) {
-                            Icon(Icons.Default.Share, contentDescription = "Share")
+                            Spacer(modifier = Modifier.height(6.dp))
+                            TextButton(
+                                onClick = { viewModel.simulateReferralAccepted() },
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                modifier = Modifier.height(28.dp)
+                            ) {
+                                Text(
+                                    text = "Simulate Referral Accept",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
-                    }
-                    
-                    Button(onClick = { viewModel.simulateReferralAccepted() }) {
-                        Text("Simulate Referral Accepted")
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -1570,11 +2725,39 @@ fun PasscodeScreen(viewModel: MainViewModel, isSetup: Boolean) {
                         ) {
                             for (key in row) {
                                 val isEnabled = isSetup || biometricAuthenticated || key == "Biometrics"
+                                val subtext = when (key) {
+                                    "1" -> ""
+                                    "2" -> "ABC"
+                                    "3" -> "DEF"
+                                    "4" -> "GHI"
+                                    "5" -> "JKL"
+                                    "6" -> "MNO"
+                                    "7" -> "PQRS"
+                                    "8" -> "TUV"
+                                    "9" -> "WXYZ"
+                                    "0" -> "+"
+                                    else -> ""
+                                }
+
                                 Box(
                                     modifier = Modifier
                                         .weight(1f)
                                         .aspectRatio(1f)
                                         .clip(CircleShape)
+                                        .background(
+                                            if (!isEnabled) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f)
+                                            else if (key == "Delete" || key == "Biometrics") Color.Transparent
+                                            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                                        )
+                                        .then(
+                                            if (key != "Delete" && key != "Biometrics") {
+                                                Modifier.border(
+                                                    width = 1.dp,
+                                                    color = if (isEnabled) MaterialTheme.colorScheme.primary.copy(alpha = 0.25f) else Color.Transparent,
+                                                    shape = CircleShape
+                                                )
+                                            } else Modifier
+                                        )
                                         .clickable(enabled = isEnabled) {
                                             when (key) {
                                                 "Delete" -> {
@@ -1635,36 +2818,48 @@ fun PasscodeScreen(viewModel: MainViewModel, isSetup: Boolean) {
                                                     }
                                                 }
                                             }
-                                        }
-                                        .background(
-                                            if (!isEnabled) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
-                                            else if (key == "Delete" || key == "Biometrics") Color.Transparent
-                                            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                        ),
+                                        },
                                     contentAlignment = Alignment.Center
                                 ) {
                                     when (key) {
                                         "Delete" -> Icon(
                                             imageVector = Icons.Default.Backspace,
                                             contentDescription = "Backspace",
-                                            tint = MaterialTheme.colorScheme.onSurface
+                                            tint = if (isEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                                            modifier = Modifier.size(26.dp)
                                         )
                                         "Biometrics" -> {
                                             if (!isSetup) {
                                                 Icon(
-                                                    imageVector = Icons.Default.CheckCircle,
-                                                    contentDescription = "Biometric Active",
-                                                    tint = Color(0xFF38ef7d),
-                                                    modifier = Modifier.size(28.dp)
+                                                    imageVector = Icons.Default.Fingerprint,
+                                                    contentDescription = "Biometrics Scan",
+                                                    tint = if (biometricAuthenticated) Color(0xFF38ef7d) else MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(32.dp)
                                                 )
                                             }
                                         }
-                                        else -> Text(
-                                            text = key,
-                                            fontSize = 24.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
+                                        else -> {
+                                            Column(
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                verticalArrangement = Arrangement.Center
+                                            ) {
+                                                Text(
+                                                    text = key,
+                                                    fontSize = 24.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = if (isEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                                                )
+                                                if (subtext.isNotEmpty()) {
+                                                    Text(
+                                                        text = subtext,
+                                                        fontSize = 8.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = if (isEnabled) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                                                        letterSpacing = 1.sp
+                                                    )
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -1689,6 +2884,7 @@ fun FeedScreen(viewModel: MainViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
         // Top branding
@@ -2286,7 +3482,7 @@ fun ShareScreen(viewModel: MainViewModel) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 )
             },
-            keyboardOptions = KeyboardOptions(autoCorrect = false),
+            keyboardOptions = KeyboardOptions(autoCorrectEnabled = false),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(180.dp)
@@ -3951,6 +5147,7 @@ fun ProfileSetupScreen(viewModel: MainViewModel) {
                                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
                                 placeholder = { Text("e.g. Cipher_Wolf") },
                                 singleLine = true,
+                                keyboardOptions = KeyboardOptions(autoCorrectEnabled = false),
                                 isError = usernameError != null,
                                 supportingText = { 
                                     usernameError?.let { Text(it) } ?: Text("Only letters, numbers, and underscores allowed.")

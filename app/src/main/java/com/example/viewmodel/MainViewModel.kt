@@ -446,7 +446,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 repository.saveSetting("user_pin", hashedPin)
                 isPasscodeSetup.value = true
                 isAuthenticated.value = true
-                currentScreen.value = Screen.Feed
+                currentScreen.value = Screen.Dashboard
                 passcodeError.value = null
             } else {
                 passcodeError.value = "PIN must be exactly 4 digits."
@@ -496,7 +496,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
             isPasscodeSetup.value = true
             isAuthenticated.value = true
-            currentScreen.value = Screen.Feed
+            currentScreen.value = Screen.Dashboard
         }
     }
 
@@ -512,7 +512,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     repository.saveSetting("user_pin", hashedInput) // Upgrade to SHA-256 seamlessly
                 }
                 isAuthenticated.value = true
-                currentScreen.value = Screen.Feed
+                currentScreen.value = Screen.Dashboard
                 passcodeError.value = null
                 passcodeText.value = ""
             } else {
@@ -527,7 +527,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             isAuthenticated.value = true
             isChatAuthenticated.value = true
-            currentScreen.value = Screen.Feed
+            currentScreen.value = Screen.Dashboard
             passcodeError.value = null
             passcodeText.value = ""
         }
@@ -731,6 +731,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         isLocked.value = false
         isAuthenticated.value = true
         updateInteractionTime()
+        if (currentScreen.value == Screen.Auth) {
+            currentScreen.value = Screen.Dashboard
+        }
     }
 
     // Helper generators
